@@ -1,0 +1,201 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  direction: rtl;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+.add-button,
+.remove-button {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  font-size: 1.25rem;
+  line-height: 1;
+  transition: background-color 0.2s;
+}
+
+.add-button {
+  background-color: #10b981;
+}
+
+.add-button:hover {
+  background-color: #047857;
+}
+
+.remove-button {
+  background-color: #ef4444;
+  font-size: 1.25rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-button:hover {
+  background-color: #dc2626;
+}
+
+.react-datepicker__input-container input {
+  direction: ltr;
+  text-align: right;
+}
+
+.rtl-calendar {
+  direction: rtl;
+  font-size: 16px;
+}
+
+.rtl-calendar .react-datepicker__day-name,
+.rtl-calendar .react-datepicker__day {
+  margin-left: 0;
+  margin-right: auto;
+  padding: 10px;
+  width: 40px;
+  height: 40px;
+  line-height: 40px;
+  text-align: center;
+}
+
+.rtl-calendar .react-datepicker__navigation--previous {
+  right: 10px;
+  left: auto;
+  top: 15px;
+}
+
+.rtl-calendar .react-datepicker__navigation--next {
+  left: 10px;
+  right: auto;
+  top: 15px;
+}
+
+.rtl-calendar .react-datepicker__header {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  font-size: 18px;
+}
+
+.rtl-calendar .react-datepicker__current-month {
+  text-align: center;
+  width: 100%;
+  margin: 13px 0 0 0;
+}
+
+.navbar {
+  background-color: #2563eb;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+}
+
+.navbar-content {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  padding: 0 1rem;
+  box-sizing: border-box;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-grow: 1;
+  justify-content: flex-end;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 1rem;
+}
+
+.navbar-link {
+  color: white;
+  text-decoration: none;
+  font-size: 1.2rem;
+  transition: color 0.3s;
+}
+
+.navbar-link:hover {
+  color: #ddd;
+}
+
+.navbar-logo {
+  margin-right: 0;
+}
+
+.navbar-logo .logo {
+  height: 60px;
+}
+
+.content-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: calc(100vh - 80px);
+  padding-top: 1rem;
+  width: 100%;
+}
+
+.form-container {
+  background: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 32rem;
+}
+
+.react-datepicker-popper {
+  z-index: 2000;
+}
+
+.react-datepicker {
+  transform: translateY(0) !important;
+}
+
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* أنماط زر تسجيل الخروج لتحريكه داخل الشريط */
+.logout-button {
+  margin-right: auto; /* دفع الزر إلى أقصى اليمين (بسبب dir="ltr") */
+  margin-left: 1rem; /* إضافة مسافة على اليسار لضبط الموقع */
+}
