@@ -39,6 +39,7 @@
 //   const [selectedDeviceType, setSelectedDeviceType] = useState(null);
 //   const [selectedCondition, setSelectedCondition] = useState(null);
 //   const [selectedManufacturerFilter, setSelectedManufacturerFilter] = useState(null);
+//   const [searchQuery, setSearchQuery] = useState('');
 
 //   const companies = [
 //     { value: 'dell | ديل', label: 'Dell | ديل' },
@@ -77,7 +78,6 @@
 //     { value: 'other | شركة أخرى', label: 'Other | شركة أخرى' },
 //   ];
 
-//   // قائمة الحالات للفلاتر (تحتوي على "مستخدم")
 //   const assetConditionsForFilter = [
 //     { value: 'جديد', label: 'جديد' },
 //     { value: 'مستخدم', label: 'مستخدم' },
@@ -85,7 +85,6 @@
 //     { value: 'مخزن', label: 'مخزن' },
 //   ];
 
-//   // قائمة الحالات للتعديل (بدون "مستخدم")
 //   const assetConditionsForEdit = [
 //     { value: 'جديد', label: 'جديد' },
 //     { value: 'بحاجة صيانة', label: 'بحاجة صيانة' },
@@ -123,6 +122,14 @@
 
 //   useEffect(() => {
 //     let filtered = [...assets];
+
+//     if (searchQuery) {
+//       filtered = filtered.filter((asset) =>
+//         String(asset.fields['assetnum'] || '').includes(searchQuery) ||
+//         String(asset.fields['الرقم التسلسلي'] || '').toLowerCase().includes(searchQuery.toLowerCase())
+//       );
+//     }
+
 //     if (selectedDeviceType) {
 //       filtered = filtered.filter((asset) =>
 //         asset.fields['اسم الاصل']?.includes(selectedDeviceType.value)
@@ -140,7 +147,7 @@
 //       );
 //     }
 //     setFilteredAssets(filtered);
-//   }, [assets, selectedDeviceType, selectedCondition, selectedManufacturerFilter]);
+//   }, [assets, selectedDeviceType, selectedCondition, selectedManufacturerFilter, searchQuery]);
 
 //   const fetchAssets = async () => {
 //     try {
@@ -341,55 +348,46 @@
 //   };
 
 //   const validateEditForm = async () => {
-//     // التحقق من طول رقم الأصل
 //     if (editedAssetNumber.length !== 4) {
 //       setEditErrorMessage('رقم الأصل يجب أن يكون 4 أرقام بالضبط.');
 //       return false;
 //     }
-  
-//     // التحقق من الرقم التسلسلي
+
 //     const arabicRegex = /[\u0600-\u06FF]/;
 //     if (arabicRegex.test(editedSerialNumber)) {
 //       setEditErrorMessage('الرقم التسلسلي لا يمكن أن يحتوي على حروف عربية.');
 //       return false;
 //     }
-  
-//     // التحقق من الشركة المصنعة
+
 //     if (!editedManufacturer) {
 //       setEditErrorMessage('يرجى اختيار الشركة المصنعة.');
 //       return false;
 //     }
-  
-//     // التحقق من حالة الأصل
+
 //     if (!editedAssetCondition) {
 //       setEditErrorMessage('يرجى اختيار حالة الأصل.');
 //       return false;
 //     }
-  
-//     // التحقق من المواصفات الإضافية
+
 //     if (!editedSpecifications || editedSpecifications.trim() === '') {
 //       setEditErrorMessage('يرجى ملء حقل المواصفات الإضافية.');
 //       return false;
 //     }
-  
-//     // التحقق من حالة الأصل
+
 //     const status = getStatusStyles(assetToEdit.fields['حالة الاصل'], assetToEdit.fields['مستلم الاصل']).status;
-  
-//     // منع تغيير رقم الأصل إذا كان الأصل مستخدمًا
+
 //     if (status === 'مستخدم' && editedAssetNumber !== assetToEdit.fields.assetnum.toString()) {
 //       setEditErrorMessage('لا يمكن تغيير رقم الأصل لأصل في حالة "مستخدم".');
 //       toast.error('لا يمكن تغيير رقم الأصل لأصل في حالة "مستخدم".');
 //       return false;
 //     }
-  
-//     // التحقق من رقم الأصل المكرر
+
 //     const assetNumberAsNumber = parseInt(editedAssetNumber, 10);
 //     let existingAssetRecords = [];
 //     try {
 //       const response = await fetch(`/api/addasset?query=${assetNumberAsNumber}`);
 //       if (!response.ok) {
 //         console.warn(`فشل طلب API للتحقق من رقم الأصل: حالة ${response.status} - ${response.statusText}`);
-//         // لا نوقف العملية، بل نستمر مع افتراض عدم وجود تكرار
 //       } else {
 //         existingAssetRecords = await response.json();
 //         if (!Array.isArray(existingAssetRecords)) {
@@ -399,24 +397,20 @@
 //       }
 //     } catch (error) {
 //       console.error('خطأ في جلب بيانات رقم الأصل:', error);
-//       // لا نوقف العملية، بل نستمر مع افتراض عدم وجود تكرار
 //       toast.warn('تعذر التحقق من رقم الأصل بسبب مشكلة في الاتصال. سيتم المتابعة بدون التحقق من التكرار.');
 //     }
-  
-//     // التحقق من التكرار إذا كانت البيانات متاحة
+
 //     if (Array.isArray(existingAssetRecords) && existingAssetRecords.some((record) => record.id !== assetToEdit.id)) {
 //       setEditErrorMessage('رقم الأصل مستخدم بالفعل.');
 //       toast.error('رقم الأصل مستخدم بالفعل.');
 //       return false;
 //     }
-  
-//     // التحقق من الرقم التسلسلي المكرر
+
 //     let existingSerialRecords = [];
 //     try {
 //       const response = await fetch(`/api/addasset?serial=${editedSerialNumber}`);
 //       if (!response.ok) {
 //         console.warn(`فشل طلب API للتحقق من الرقم التسلسلي: حالة ${response.status} - ${response.statusText}`);
-//         // لا نوقف العملية، بل نستمر مع افتراض عدم وجود تكرار
 //       } else {
 //         existingSerialRecords = await response.json();
 //         if (!Array.isArray(existingSerialRecords)) {
@@ -426,18 +420,15 @@
 //       }
 //     } catch (error) {
 //       console.error('خطأ في جلب بيانات الرقم التسلسلي:', error);
-//       // لا نوقف العملية، بل نستمر مع افتراض عدم وجود تكرار
 //       toast.warn('تعذر التحقق من الرقم التسلسلي بسبب مشكلة في الاتصال. سيتم المتابعة بدون التحقق من التكرار.');
 //     }
-  
-//     // التحقق من التكرار إذا كانت البيانات متاحة
+
 //     if (Array.isArray(existingSerialRecords) && existingSerialRecords.some((record) => record.id !== assetToEdit.id)) {
 //       setEditErrorMessage('الرقم التسلسلي مستخدم بالفعل.');
 //       toast.error('الرقم التسلسلي مستخدم بالفعل.');
 //       return false;
 //     }
-  
-//     // التحقق من حالة الأصل المستخدم
+
 //     if (status === 'مستخدم') {
 //       const originalCondition = assetToEdit.fields['حالة الاصل']?.trim();
 //       const newCondition = editedAssetCondition?.value;
@@ -446,8 +437,7 @@
 //         toast.error('لا يمكن تعديل حالة الأصل لأنه في حالة "مستخدم".');
 //         return false;
 //       }
-  
-//       // التحقق من التوقيع
+
 //       const paths = await rsCanvas.current.exportPaths();
 //       if (!signatureData || !paths || paths.length === 0) {
 //         setEditErrorMessage('يرجى رسم توقيع وحفظه قبل تقديم التعديلات. اللوحة فارغة أو لم يتم حفظ توقيع.');
@@ -455,7 +445,7 @@
 //         return false;
 //       }
 //     }
-  
+
 //     return true;
 //   };
 
@@ -573,78 +563,76 @@
 
 //   const getBorderColorByAssetNum = (assetNum) => {
 //     if (!assetNum) return 'border-gray-600';
-  
-//     const numStr = String(assetNum).padStart(4, '0'); // التأكد من أن الرقم 4 أرقام
+
+//     const numStr = String(assetNum).padStart(4, '0');
 //     const firstDigit = numStr.charAt(0);
 //     const firstTwoDigits = numStr.slice(0, 2);
-  
+
 //     switch (firstTwoDigits) {
-//       // أنواع تحتاج أول رقمين
-//       case '40': // جوال
+//       case '40':
 //       case '41':
 //       case '42':
 //       case '43':
 //       case '44':
 //         return 'border-blue-500';
-//       case '45': // تابلت
+//       case '45':
 //       case '46':
 //       case '47':
 //       case '48':
 //       case '49':
 //         return 'border-cyan-500';
-//       case '70': // كيبورد
+//       case '70':
 //       case '71':
 //       case '72':
 //       case '73':
 //       case '74':
 //         return 'border-pink-500';
-//       case '75': // ماوس
+//       case '75':
 //       case '76':
 //       case '77':
 //       case '78':
 //       case '79':
 //         return 'border-rose-500';
-//       case '81': // طابعة
+//       case '81':
 //         return 'border-teal-500';
-//       case '82': // سويتشات
+//       case '82':
 //         return 'border-emerald-500';
-//       case '83': // كيبل نت
+//       case '83':
 //         return 'border-lime-500';
-//       case '84': // كيبل HDMI
+//       case '84':
 //         return 'border-amber-500';
-//       case '85': // كاميرات
+//       case '85':
 //         return 'border-violet-500';
-//       case '86': // جهاز DVR
+//       case '86':
 //         return 'border-fuchsia-500';
-//       case '87': // اكسس بوينت
+//       case '87':
 //         return 'border-sky-500';
-//       case '88': // سماعات
+//       case '88':
 //         return 'border-orange-500';
-//       case '89': // عدة صيانة
+//       case '89':
 //         return 'border-yellow-500';
-//       case '91': // جهاز نقل الألياف
+//       case '91':
 //         return 'border-indigo-500';
-//       case '92': // جهاز بصمة
+//       case '92':
 //         return 'border-purple-500';
-//       case '93': // وحدات تخزين
+//       case '93':
 //         return 'border-green-500';
-//       case '94': // أجهزة مكتبية
+//       case '94':
 //         return 'border-red-500';
 //       default:
-//         // أنواع تعتمد على الرقم الأول فقط
 //         switch (firstDigit) {
-//           case '1': // جهاز كمبيوتر
+//           case '1':
 //             return 'border-green-600';
-//           case '2': // لاب توب
+//           case '2':
 //             return 'border-yellow-600';
-//           case '3': // شاشة كمبيوتر
+//           case '3':
 //             return 'border-red-600';
-//           case '5': // شريحة اتصال
+//           case '5':
 //             return 'border-purple-600';
-//           case '6': // تليفون شبكة
+//           case '6':
 //             return 'border-orange-600';
 //           default:
-//             return 'border-gray-600'; // غير محدد
+//             return 'border-gray-600';
 //         }
 //     }
 //   };
@@ -662,10 +650,20 @@
 //               إضافة أصل
 //             </button>
 //           </div>
-  
+
 //           <div className="mb-6 grid grid-cols-1 gap-4">
 //             <div>
-//               <label className="block text-sm font-medium text-gray-700 mb-2">نوع الجهاز</label>
+//               <label className="block text-sm font-medium text-gray-900 mb-2">البحث</label>
+//               <input
+//                 type="text"
+//                 value={searchQuery}
+//                 onChange={(e) => setSearchQuery(e.target.value)}
+//                 placeholder="ابحث برقم الأصل أو الرقم التسلسلي..."
+//                 className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+//               />
+//             </div>
+//             <div>
+//               <label className="block text-sm font-medium text-gray-900 mb-2">نوع الجهاز</label>
 //               <Select
 //                 options={deviceTypes}
 //                 value={selectedDeviceType}
@@ -676,7 +674,7 @@
 //               />
 //             </div>
 //             <div>
-//               <label className="block text-sm font-medium text-gray-700 mb-2">حالة الجهاز</label>
+//               <label className="block text-sm font-medium text-gray-900 mb-2">حالة الجهاز</label>
 //               <Select
 //                 options={assetConditionsForFilter}
 //                 value={selectedCondition}
@@ -687,7 +685,7 @@
 //               />
 //             </div>
 //             <div>
-//               <label className="block text-sm font-medium text-gray-700 mb-2">الشركة المصنعة</label>
+//               <label className="block text-sm font-medium text-gray-900 mb-2">الشركة المصنعة</label>
 //               <Select
 //                 options={companies}
 //                 value={selectedManufacturerFilter}
@@ -698,13 +696,13 @@
 //               />
 //             </div>
 //           </div>
-  
+
 //           {!loading && !error && (
 //             <div className="mb-4 text-gray-700 text-sm">
 //               عثر على <span className="font-semibold">{filteredAssets.length}</span> من النتائج
 //             </div>
 //           )}
-  
+
 //           {loading ? (
 //             <div className="text-center text-gray-500">جارٍ تحميل الأصول...</div>
 //           ) : error ? (
@@ -766,13 +764,13 @@
 //                           </div>
 //                         </div>
 //                       </div>
-//                       <div className="flex justify-between items-center">
+//                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
 //                         <div className={`my-3 ${bgColor} p-3 w-16 sm:w-20 text-center`}>
 //                           <div className={`uppercase text-xs font-semibold ${textColor}`}>
 //                             {status}
 //                           </div>
 //                         </div>
-//                         <div className="flex items-center space-x-2">
+//                         <div className="flex items-center space-x-2 mt-2 sm:mt-0">
 //                           <button
 //                             onClick={() => handleEditClick(asset)}
 //                             className="text-gray-100 rounded-sm bg-blue-500 p-2 hover:bg-blue-600"
@@ -821,7 +819,7 @@
 //               })}
 //             </div>
 //           )}
-  
+
 //           {showModal && (
 //             <div className="fixed inset-0 flex justify-center items-center z-50 bg-black bg-opacity-80">
 //               <div className="w-full max-w-md p-4 bg-white rounded-xl shadow-lg modal">
@@ -862,11 +860,11 @@
 //               </div>
 //             </div>
 //           )}
-  
+
 //           {showEditModal && (
-//             <div className="fixed inset-0 flex justify-center items-center z-50 bg-black bg-opacity-50 overflow-y-auto">
-//               <div className="w-full max-w-lg mx-2 my-4 p-4 bg-white rounded-xl shadow-lg edit-modal">
-//                 <div className="text-center p-4">
+//             <div className="fixed inset-0 pt-16 sm:pt-0 flex justify-center items-start sm:items-center z-50 bg-black bg-opacity-50 overflow-y-auto">
+//               <div className="w-full sm:max-w-lg mx-2 my-4 sm:my-4 p-4 sm:p-4 bg-white rounded-xl shadow-lg edit-modal">
+//                 <div className="text-center p-4 sm:p-4">
 //                   <h2 className="text-xl sm:text-2xl font-bold py-3">تعديل الأصل</h2>
 //                   {editErrorMessage && (
 //                     <div className="mb-3 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
@@ -875,7 +873,7 @@
 //                   )}
 //                 </div>
 //                 <form onSubmit={handleEditSubmit}>
-//                   <div className="p-2">
+//                   <div className="p-2 sm:p-2">
 //                     <div className="grid grid-cols-1 gap-3">
 //                       <div>
 //                         <label className="block text-sm font-medium text-gray-700 mb-1">رقم الأصل</label>
@@ -889,7 +887,7 @@
 //                             assetToEdit &&
 //                             getStatusStyles(assetToEdit.fields['حالة الاصل'], assetToEdit.fields['مستلم الاصل']).status === 'مستخدم'
 //                           }
-//                           className={`w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+//                           className={`w-full p-2 sm:p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
 //                             assetToEdit &&
 //                             getStatusStyles(assetToEdit.fields['حالة الاصل'], assetToEdit.fields['مستلم الاصل']).status === 'مستخدم'
 //                               ? 'bg-gray-200 cursor-not-allowed'
@@ -909,7 +907,7 @@
 //                           value={editedName}
 //                           onChange={(e) => setEditedName(e.target.value)}
 //                           required
-//                           className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+//                           className="w-full p-2 sm:p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
 //                         />
 //                       </div>
 //                       <div>
@@ -919,7 +917,7 @@
 //                           value={editedSerialNumber}
 //                           onChange={handleSerialNumberChange}
 //                           required
-//                           className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+//                           className="w-full p-2 sm:p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
 //                           placeholder="أدخل الرقم التسلسلي"
 //                         />
 //                       </div>
@@ -961,7 +959,7 @@
 //                           value={editedSpecifications}
 //                           onChange={(e) => setEditedSpecifications(e.target.value)}
 //                           required
-//                           className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+//                           className="w-full p-2 sm:p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
 //                           rows={3}
 //                         />
 //                       </div>
@@ -1003,18 +1001,18 @@
 //                         </div>
 //                       )}
 //                   </div>
-//                   <div className="p-3 text-center space-x-3">
+//                   <div className="p-3 sm:p-3 text-center space-x-3">
 //                     <button
 //                       type="button"
 //                       onClick={cancelEdit}
-//                       className="bg-white px-4 py-2 text-sm font-medium border text-gray-600 rounded-full hover:bg-gray-100"
+//                       className="bg-white px-4 py-2 sm:px-4 sm:py-2 text-sm font-medium border text-gray-600 rounded-full hover:bg-gray-100"
 //                       disabled={isEditing}
 //                     >
 //                       إلغاء
 //                     </button>
 //                     <button
 //                       type="submit"
-//                       className={`bg-blue-500 px-4 py-2 text-sm font-medium text-white rounded-full hover:bg-blue-600 ${
+//                       className={`bg-blue-500 px-4 py-2 sm:px-4 sm:py-2 text-sm font-medium text-white rounded-full hover:bg-blue-600 ${
 //                         isEditing ? 'opacity-50 cursor-not-allowed' : ''
 //                       }`}
 //                       disabled={isEditing}
@@ -1036,7 +1034,7 @@
 //         </div>
 //         <ToastContainer position="top-right" autoClose={3000} rtl={true} />
 //       </div>
-  
+
 //       {/* Mobile-specific styles */}
 //       <style jsx>{`
 //         @media (max-width: 640px) {
@@ -1085,6 +1083,7 @@
 //             max-width: 95%;
 //             margin: 0.5rem;
 //             padding: 0.75rem;
+//             margin-top: 4rem; /* Extra margin to ensure visibility below navbar */
 //           }
 //           .edit-modal input,
 //           .edit-modal textarea {
@@ -1096,6 +1095,12 @@
 //           }
 //           .edit-modal .text-xl {
 //             font-size: 1.125rem;
+//           }
+//           .edit-modal button {
+//             padding: 0.5rem 1rem;
+//             font-size: 0.75rem;
+//             min-width: 2.5rem;
+//             min-height: 2.5rem;
 //           }
 //           .signature-canvas {
 //             height: 120px;
@@ -1149,6 +1154,7 @@ export default function AssetAdmin() {
   const [selectedDeviceType, setSelectedDeviceType] = useState(null);
   const [selectedCondition, setSelectedCondition] = useState(null);
   const [selectedManufacturerFilter, setSelectedManufacturerFilter] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const companies = [
     { value: 'dell | ديل', label: 'Dell | ديل' },
@@ -1231,6 +1237,14 @@ export default function AssetAdmin() {
 
   useEffect(() => {
     let filtered = [...assets];
+
+    if (searchQuery) {
+      filtered = filtered.filter((asset) =>
+        String(asset.fields['assetnum'] || '').includes(searchQuery) ||
+        String(asset.fields['الرقم التسلسلي'] || '').toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
     if (selectedDeviceType) {
       filtered = filtered.filter((asset) =>
         asset.fields['اسم الاصل']?.includes(selectedDeviceType.value)
@@ -1248,7 +1262,7 @@ export default function AssetAdmin() {
       );
     }
     setFilteredAssets(filtered);
-  }, [assets, selectedDeviceType, selectedCondition, selectedManufacturerFilter]);
+  }, [assets, selectedDeviceType, selectedCondition, selectedManufacturerFilter, searchQuery]);
 
   const fetchAssets = async () => {
     try {
@@ -1754,7 +1768,17 @@ export default function AssetAdmin() {
 
           <div className="mb-6 grid grid-cols-1 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">نوع الجهاز</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2">البحث</label>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ابحث برقم الأصل أو الرقم التسلسلي..."
+                className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">نوع الجهاز</label>
               <Select
                 options={deviceTypes}
                 value={selectedDeviceType}
@@ -1765,7 +1789,7 @@ export default function AssetAdmin() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">حالة الجهاز</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2">حالة الجهاز</label>
               <Select
                 options={assetConditionsForFilter}
                 value={selectedCondition}
@@ -1776,7 +1800,7 @@ export default function AssetAdmin() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">الشركة المصنعة</label>
+              <label className="block text-sm font-medium text-gray-900 mb-2">الشركة المصنعة</label>
               <Select
                 options={companies}
                 value={selectedManufacturerFilter}
@@ -1855,13 +1879,13 @@ export default function AssetAdmin() {
                           </div>
                         </div>
                       </div>
-                      <div className="flex justify-between items-center">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                         <div className={`my-3 ${bgColor} p-3 w-16 sm:w-20 text-center`}>
                           <div className={`uppercase text-xs font-semibold ${textColor}`}>
                             {status}
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 mt-2 sm:mt-0">
                           <button
                             onClick={() => handleEditClick(asset)}
                             className="text-gray-100 rounded-sm bg-blue-500 p-2 hover:bg-blue-600"
@@ -1954,20 +1978,20 @@ export default function AssetAdmin() {
 
           {showEditModal && (
             <div className="fixed inset-0 pt-16 sm:pt-0 flex justify-center items-start sm:items-center z-50 bg-black bg-opacity-50 overflow-y-auto">
-              <div className="w-full sm:max-w-lg mx-2 my-4 sm:my-4 p-4 sm:p-4 bg-white rounded-xl shadow-lg edit-modal">
-                <div className="text-center p-4 sm:p-4">
-                  <h2 className="text-xl sm:text-2xl font-bold py-3">تعديل الأصل</h2>
+              <div className="w-full sm:max-w-lg mx-2 my-4 sm:my-4 p-4 sm:p-6 bg-white rounded-xl shadow-lg edit-modal max-h-[90vh] min-h-[50vh] overflow-y-auto">
+                <div className="text-center p-3 sm:p-4">
+                  <h2 className="text-lg sm:text-2xl font-bold py-2 sm:py-3">تعديل الأصل</h2>
                   {editErrorMessage && (
-                    <div className="mb-3 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
+                    <div className="mb-2 sm:mb-3 p-2 sm:p-3 bg-red-100 text-red-700 rounded-lg text-xs sm:text-sm">
                       {editErrorMessage}
                     </div>
                   )}
                 </div>
                 <form onSubmit={handleEditSubmit}>
-                  <div className="p-2 sm:p-2">
-                    <div className="grid grid-cols-1 gap-3">
+                  <div className="p-2 sm:p-4">
+                    <div className="grid grid-cols-1 gap-3 sm:gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">رقم الأصل</label>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">رقم الأصل</label>
                         <input
                           type="text"
                           value={editedAssetNumber}
@@ -1978,7 +2002,7 @@ export default function AssetAdmin() {
                             assetToEdit &&
                             getStatusStyles(assetToEdit.fields['حالة الاصل'], assetToEdit.fields['مستلم الاصل']).status === 'مستخدم'
                           }
-                          className={`w-full p-2 sm:p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                          className={`w-full p-2 sm:p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base ${
                             assetToEdit &&
                             getStatusStyles(assetToEdit.fields['حالة الاصل'], assetToEdit.fields['مستلم الاصل']).status === 'مستخدم'
                               ? 'bg-gray-200 cursor-not-allowed'
@@ -1992,46 +2016,46 @@ export default function AssetAdmin() {
                           )}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">اسم الأصل</label>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">اسم الأصل</label>
                         <input
                           type="text"
                           value={editedName}
                           onChange={(e) => setEditedName(e.target.value)}
                           required
-                          className="w-full p-2 sm:p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full p-2 sm:p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">الرقم التسلسلي</label>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">الرقم التسلسلي</label>
                         <input
                           type="text"
                           value={editedSerialNumber}
                           onChange={handleSerialNumberChange}
                           required
-                          className="w-full p-2 sm:p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full p-2 sm:p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
                           placeholder="أدخل الرقم التسلسلي"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">الشركة المصنعة</label>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">الشركة المصنعة</label>
                         <Select
                           options={companies}
                           value={editedManufacturer}
                           onChange={setEditedManufacturer}
                           placeholder="اختر الشركة المصنعة..."
-                          className="w-full"
+                          className="w-full text-sm sm:text-base"
                           isSearchable
                           isClearable
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">حالة الأصل</label>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">حالة الأصل</label>
                         <Select
                           options={assetConditionsForEdit}
                           value={editedAssetCondition}
                           onChange={setEditedAssetCondition}
                           placeholder="اختر حالة الأصل..."
-                          className="w-full"
+                          className="w-full text-sm sm:text-base"
                           isSearchable
                           isClearable
                           isDisabled={
@@ -2045,25 +2069,25 @@ export default function AssetAdmin() {
                           )}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">المواصفات الإضافية</label>
+                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">المواصفات الإضافية</label>
                         <textarea
                           value={editedSpecifications}
                           onChange={(e) => setEditedSpecifications(e.target.value)}
                           required
-                          className="w-full p-2 sm:p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full p-2 sm:p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
                           rows={3}
                         />
                       </div>
                     </div>
                     {assetToEdit &&
                       getStatusStyles(assetToEdit.fields['حالة الاصل'], assetToEdit.fields['مستلم الاصل']).status === 'مستخدم' && (
-                        <div className="mt-3">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">توقيع مستلم الأصل</label>
+                        <div className="mt-3 sm:mt-4">
+                          <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">توقيع مستلم الأصل</label>
                           <div className="w-full">
                             <ReactSketchCanvas
                               ref={rsCanvas}
                               width="100%"
-                              height="150px"
+                              height="120px sm:150px"
                               strokeColor="black"
                               strokeWidth={5}
                               onChange={handleCanvasChange}
@@ -2077,14 +2101,14 @@ export default function AssetAdmin() {
                             <button
                               type="button"
                               onClick={clearSignature}
-                              className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600 text-sm"
+                              className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600 text-xs sm:text-sm"
                             >
                               مسح التوقيع
                             </button>
                             <button
                               type="button"
                               onClick={saveSignature}
-                              className="bg-green-500 text-white py-1 px-3 rounded hover:bg-green-600 text-sm"
+                              className="bg-green-500 text-white py-1 px-3 rounded hover:bg-green-600 text-xs sm:text-sm"
                             >
                               حفظ التوقيع
                             </button>
@@ -2092,25 +2116,25 @@ export default function AssetAdmin() {
                         </div>
                       )}
                   </div>
-                  <div className="p-3 sm:p-3 text-center space-x-3">
+                  <div className="p-3 sm:p-4 text-center space-x-2 sm:space-x-3">
                     <button
                       type="button"
                       onClick={cancelEdit}
-                      className="bg-white px-4 py-2 sm:px-4 sm:py-2 text-sm font-medium border text-gray-600 rounded-full hover:bg-gray-100"
+                      className="bg-white px-3 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium border text-gray-600 rounded-full hover:bg-gray-100"
                       disabled={isEditing}
                     >
                       إلغاء
                     </button>
                     <button
                       type="submit"
-                      className={`bg-blue-500 px-4 py-2 sm:px-4 sm:py-2 text-sm font-medium text-white rounded-full hover:bg-blue-600 ${
+                      className={`bg-blue-500 px-3 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-medium text-white rounded-full hover:bg-blue-600 ${
                         isEditing ? 'opacity-50 cursor-not-allowed' : ''
                       }`}
                       disabled={isEditing}
                     >
                       {isEditing ? (
                         <div className="flex items-center justify-center">
-                          <ClipLoader color="#ffffff" size={18} />
+                          <ClipLoader color="#ffffff" size={16} />
                           <span className="ml-1">جارٍ التعديل...</span>
                         </div>
                       ) : (
@@ -2173,28 +2197,30 @@ export default function AssetAdmin() {
             width: 95%;
             max-width: 95%;
             margin: 0.5rem;
-            padding: 0.75rem;
-            margin-top: 4rem; /* Extra margin to ensure visibility below navbar */
+            padding: 0.5rem;
+            margin-top: 2rem; /* Reduced margin for better visibility */
+            max-height: 85vh; /* Slightly reduced to ensure scrollability */
+            min-height: 60vh; /* Ensure minimum height */
           }
           .edit-modal input,
           .edit-modal textarea {
             padding: 0.5rem;
-            font-size: 0.875rem;
+            font-size: 0.75rem;
           }
           .edit-modal label {
             font-size: 0.75rem;
           }
-          .edit-modal .text-xl {
-            font-size: 1.125rem;
+          .edit-modal .text-lg {
+            font-size: 1rem;
           }
           .edit-modal button {
             padding: 0.5rem 1rem;
             font-size: 0.75rem;
-            min-width: 2.5rem;
-            min-height: 2.5rem;
+            min-width: 2rem;
+            min-height: 2rem;
           }
           .signature-canvas {
-            height: 120px;
+            height: 100px; /* Reduced height for mobile */
           }
           .Toastify__toast {
             font-size: 0.75rem;
