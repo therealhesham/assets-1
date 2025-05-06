@@ -754,6 +754,7 @@ const companies = [
   { value: 'lenovo | لينوفو', label: 'Lenovo | لينوفو' },
   { value: 'apple | ابل', label: 'Apple | ابل' },
   { value: 'asus | ايسوس', label: 'Asus | ايسوس' },
+  { value: 'HUAWEI | هواوي', label: 'HUAWEI | هواوي' },
   { value: 'grandstream | جراندستريم', label: 'Grandstream | جراندستريم' },
   { value: 'epson | ايبسون', label: 'Epson | ايبسون' },
   { value: 'benq | بنكيو', label: 'BENQ | بنكيو' },
@@ -784,6 +785,7 @@ const companies = [
   { value: 'Mobily | موبايلي', label: 'Mobily | موبايلي' },
   { value: 'other | شركة أخرى', label: 'Other | شركة أخرى' },
 ];
+
 
 const assetConditions = [
   { value: 'جديد', label: 'جديد' },
