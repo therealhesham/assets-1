@@ -1,3 +1,4 @@
+
 // 'use client';
 
 // import { useState, useEffect, useRef } from 'react';
@@ -6,8 +7,10 @@
 // import { FaCheckCircle } from 'react-icons/fa';
 // import { ToastContainer, toast } from 'react-toastify';
 // import 'react-toastify/dist/ReactToastify.css';
+// import html2pdf from 'html2pdf.js';
 
 
+// // واجهات البيانات (Interfaces)
 // interface Asset {
 //   id: string;
 //   fields: {
@@ -16,6 +19,7 @@
 //     'الرقم التسلسلي': string;
 //     'الشركة المصنعة': string;
 //     'الحالة': string;
+//     'مواصفات اضافية '?: string;
 //   };
 // }
 
@@ -43,7 +47,7 @@
 //   custodies: Custody[];
 // }
 
-// // مكون البطاقة
+// // مكون البطاقة (Card)
 // const Card: React.FC<CardProps> = ({ employeeName, custodies }) => {
 //   return (
 //     <StyledCardWrapper>
@@ -100,8 +104,8 @@
 //   .upper-part-back {
 //     text-align: center;
 //     background-color: white;
-//     color:rgb(0, 0, 0);
-//     border: 3px solid #1e90ff;;
+//     color: rgb(0, 0, 0);
+//     border: 3px solid #1e90ff;
 //     display: flex;
 //     justify-content: center;
 //     align-items: center;
@@ -184,7 +188,7 @@
 //   .lower-part-back {
 //     backface-visibility: visible;
 //     border-radius: 40px;
-//     color:rgb(11, 12, 12);
+//     color: rgb(11, 12, 12);
 //     background-color: white;
 //     transform: rotateX(180deg);
 //     z-index: 1;
@@ -205,7 +209,7 @@
 //   }
 // `;
 
-// // مكون البحث المخصص
+// // مكون البحث المخصص (SearchInput)
 // const SearchInput = ({ value, onChange }: { value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => {
 //   return (
 //     <StyledSearchWrapper>
@@ -262,7 +266,7 @@
 //     width: var(--size-button);
 //     transition: all ease 0.3s;
 //     background-color: #1e90ff;
-//     box-shadow: 1.5px 1.5px 3pxrgb(0, 0, 0), -1.5px -1.5px 3px rgb(95 94 94 / 25%), inset 0px 0px 0px #0e0e0e, inset 0px -0px 0px #5f5e5e;
+//     box-shadow: 1.5px 1.5px 3px rgb(0, 0, 0), -1.5px -1.5px 3px rgb(95 94 94 / 25%), inset 0px 0px 0px #0e0e0e, inset 0px -0px 0px #5f5e5e;
 //     border-radius: 50px;
 //     cursor: pointer;
 //   }
@@ -294,13 +298,13 @@
 //     width: 100%;
 //     height: 100%;
 //   }
-//     /* لضمان توافق النص مع الاتجاه من اليمين إلى اليسار (RTL) */
 //   .input::placeholder {
-//     text-align: right; /* محاذاة النص إلى اليمين */
-//     padding-right: 10px; /* إضافة مسافة إضافية على اليمين */
+//     text-align: right;
+//     padding-right: 10px;
 //   }
 // `;
 
+// // مكون CustodyManagement
 // export default function CustodyManagement() {
 //   const [employeeCustodies, setEmployeeCustodies] = useState<EmployeeCustodies[]>([]);
 //   const [filteredCustodies, setFilteredCustodies] = useState<EmployeeCustodies[]>([]);
@@ -483,53 +487,53 @@
 //       toast.error('البريد الإلكتروني غير متوفر في سجل العهدة');
 //       return;
 //     }
-  
+
 //     if (editingCustody.fields['رقم الاصل'].length <= 1) {
 //       toast.error('لا يمكن حذف الأصل الوحيد في العهدة');
 //       return;
 //     }
-  
+
 //     setAssetToRemove(assetId);
-//     setShowAssetDeleteModal(true); // تفعيل نافذة تأكيد حذف الأصل
+//     setShowAssetDeleteModal(true);
 //   };
-  
+
 //   const confirmAssetRemoval = async () => {
 //     if (!editingCustody || !assetToRemove) return;
-  
+
 //     try {
 //       setIsProcessing(true);
-  
+
 //       const updatedAssetIds = editingCustody.fields['رقم الاصل'].filter((id) => id !== assetToRemove);
 //       const formData = new FormData();
 //       formData.append('id', editingCustody.id);
 //       formData.append('employeeName', editingCustody.fields['اسم الموظف']);
 //       formData.append('receiptDate', editingCustody.fields['تاريخ الاستلام'] || '');
 //       formData.append('records', JSON.stringify(updatedAssetIds));
-//       formData.append('email', editingCustody.fields['Email']);
+//       formData.append('email', editingCustody.fields['Email'] || '');
 //       formData.append('removedAssetId', assetToRemove);
-  
+
 //       const res = await fetch(`/api/CustodyManagement`, {
 //         method: 'PATCH',
 //         body: formData,
 //       });
-  
+
 //       if (!res.ok) {
 //         const errorData = await res.json();
 //         throw new Error(errorData.error || 'فشل في حذف الأصل وإرسال الإيميل');
 //       }
-  
+
 //       setIsProcessing(false);
 //       setShowEmailAnimation(true);
-  
+
 //       toast.success('تم حذف الأصل وإرسال الإيميل بنجاح!', {
 //         icon: <FaCheckCircle className="text-green-500" />,
 //       });
-  
+
 //       await new Promise((resolve) => setTimeout(resolve, 2000));
-  
+
 //       setShowEmailAnimation(false);
 //       setAssetToRemove(null);
-//       setShowAssetDeleteModal(false); // إغلاق نافذة التأكيد
+//       setShowAssetDeleteModal(false);
 //       await updateCustody(editingCustody.id, { 'رقم الاصل': updatedAssetIds });
 //     } catch (error: any) {
 //       console.error('Error removing asset:', error);
@@ -537,7 +541,7 @@
 //       toast.error(error.message);
 //     }
 //   };
-  
+
 //   const cancelAssetRemoval = () => {
 //     setShowAssetDeleteModal(false);
 //     setAssetToRemove(null);
@@ -550,88 +554,324 @@
 //   };
 
 //   const closeClearanceModal = () => {
-//   setShowClearanceModal(false);
-//   setCustodyToClear(null);
-//   if (canvasRef.current) {
-//     canvasRef.current.resetCanvas(); // تغيير clearCanvas إلى resetCanvas
-//     setHasDrawn(false); // إعادة تعيين hasDrawn
-//   }
-//   setShowEmailAnimation(false);
-//   setIsProcessing(false);
-// };
-
-// const clearCustody = async () => {
-//   if (!custodyToClear || !canvasRef.current) return;
-
-//   if (!custodyToClear.fields['Email']) {
-//     toast.error('البريد الإلكتروني غير متوفر في سجل العهدة');
-//     return;
-//   }
-
-//   try {
-//     const paths = await canvasRef.current.exportPaths();
-//     if (!paths || paths.length === 0) {
-//       toast.error('يرجى رسم توقيع قبل تأكيد إخلاء العهدة. اللوحة فارغة.');
-//       return;
-//     }
-
-//     const signatureDataUrl = await canvasRef.current.exportImage('png');
-//     if (!signatureDataUrl || !signatureDataUrl.startsWith('data:image/')) {
-//       toast.error('صيغة التوقيع غير صالحة. يرجى إعادة الرسم.');
-//       return;
-//     }
-
-//     setIsProcessing(true);
-
-//     const formData = new FormData();
-//     formData.append('id', custodyToClear.id);
-//     formData.append('employeeName', custodyToClear.fields['اسم الموظف']);
-//     formData.append('receiptDate', custodyToClear.fields['تاريخ الاستلام'] || '');
-//     const assetIds = Array.isArray(custodyToClear.fields['رقم الاصل']) ? custodyToClear.fields['رقم الاصل'] : [];
-//     formData.append('records', JSON.stringify(assetIds));
-//     formData.append('email', custodyToClear.fields['Email']);
-//     formData.append('signature', signatureDataUrl);
-
-//     const res = await fetch(`/api/CustodyManagement`, {
-//       method: 'DELETE',
-//       body: formData,
-//     });
-
-//     if (!res.ok) {
-//       const errorData = await res.json();
-//       throw new Error(errorData.error || 'فشل في إخلاء العهدة');
-//     }
-
-//     setIsProcessing(false);
-//     setShowEmailAnimation(true);
-
-//     toast.success('تم حذف العهدة بنجاح!', {
-//       icon: <FaCheckCircle className="text-green-500" />,
-//     });
-
-//     await new Promise((resolve) => setTimeout(resolve, 2000));
-
 //     setShowClearanceModal(false);
 //     setCustodyToClear(null);
-//     setShowEmailAnimation(false);
-//     setHasDrawn(false); // إعادة تعيين hasDrawn بعد النجاح
-//     await fetchCustodies();
-
-//     if (selectedEmployee) {
-//       const updatedCustodies = selectedEmployee.custodies.filter(
-//         (custody) => custody.id !== custodyToClear.id
-//       );
-//       setSelectedEmployee({
-//         ...selectedEmployee,
-//         custodies: updatedCustodies,
-//       });
+//     if (canvasRef.current) {
+//       canvasRef.current.resetCanvas();
+//       setHasDrawn(false);
 //     }
-//   } catch (error: any) {
-//     console.error('Error clearing custody:', error);
+//     setShowEmailAnimation(false);
 //     setIsProcessing(false);
-//     toast.error(error.message);
-//   }
-// };
+//   };
+
+//   const clearCustody = async () => {
+//     if (!custodyToClear || !canvasRef.current) return;
+
+//     if (!custodyToClear.fields['Email']) {
+//       toast.error('البريد الإلكتروني غير متوفر في سجل العهدة');
+//       return;
+//     }
+
+//     try {
+//       const paths = await canvasRef.current.exportPaths();
+//       if (!paths || paths.length === 0) {
+//         toast.error('يرجى رسم توقيع قبل تأكيد إخلاء العهدة. اللوحة فارغة.');
+//         return;
+//       }
+
+//       const signatureDataUrl = await canvasRef.current.exportImage('png');
+//       if (!signatureDataUrl || !signatureDataUrl.startsWith('data:image/')) {
+//         toast.error('صيغة التوقيع غير صالحة. يرجى إعادة الرسم.');
+//         return;
+//       }
+
+//       setIsProcessing(true);
+
+//       const formData = new FormData();
+//       formData.append('id', custodyToClear.id);
+//       formData.append('employeeName', custodyToClear.fields['اسم الموظف']);
+//       formData.append('receiptDate', custodyToClear.fields['تاريخ الاستلام'] || '');
+//       const assetIds = Array.isArray(custodyToClear.fields['رقم الاصل']) ? custodyToClear.fields['رقم الاصل'] : [];
+//       formData.append('records', JSON.stringify(assetIds));
+//       formData.append('email', custodyToClear.fields['Email'] || '');
+//       formData.append('signature', signatureDataUrl);
+
+//       const res = await fetch(`/api/CustodyManagement`, {
+//         method: 'DELETE',
+//         body: formData,
+//       });
+
+//       if (!res.ok) {
+//         const errorData = await res.json();
+//         throw new Error(errorData.error || 'فشل في إخلاء العهدة');
+//       }
+
+//       setIsProcessing(false);
+//       setShowEmailAnimation(true);
+
+//       toast.success('تم حذف العهدة بنجاح!', {
+//         icon: <FaCheckCircle className="text-green-500" />,
+//       });
+
+//       await new Promise((resolve) => setTimeout(resolve, 2000));
+
+//       setShowClearanceModal(false);
+//       setCustodyToClear(null);
+//       setShowEmailAnimation(false);
+//       setHasDrawn(false);
+//       await fetchCustodies();
+
+//       if (selectedEmployee) {
+//         const updatedCustodies = selectedEmployee.custodies.filter(
+//           (custody) => custody.id !== custodyToClear.id
+//         );
+//         setSelectedEmployee({
+//           ...selectedEmployee,
+//           custodies: updatedCustodies,
+//         });
+//       }
+//     } catch (error: any) {
+//       console.error('Error clearing custody:', error);
+//       setIsProcessing(false);
+//       toast.error(error.message);
+//     }
+//   };
+
+//   const downloadCustodyPDF = async (custody: Custody) => {
+//     try {
+//       setIsProcessing(true);
+  
+//       const assetIds = Array.isArray(custody.fields['رقم الاصل']) ? custody.fields['رقم الاصل'] : [];
+//       let assets: Asset[] = custody.assets || [];
+  
+//       if (!assets.length && assetIds.length > 0) {
+//         const assetsRes = await fetch('/api/CustodyManagement', {
+//           method: 'POST',
+//           headers: { 'Content-Type': 'application/json' },
+//           body: JSON.stringify({ assetIds }),
+//         });
+//         if (!assetsRes.ok) throw new Error('فشل في جلب بيانات الأصول');
+//         assets = await assetsRes.json();
+//       }
+  
+//       const cleanedRecords = assets.map((asset) => {
+//         const fields = asset.fields || {};
+//         const requiredFields = ['اسم الاصل', 'assetnum', 'الرقم التسلسلي', 'الشركة المصنعة', 'مواصفات اضافية '];
+//         const cleanedFields: { [key: string]: string } = {};
+//         requiredFields.forEach((field) => {
+//           const value = fields[field];
+//           cleanedFields[field] = value === undefined || value === null || Number.isNaN(value) ? 'غير متوفر' : String(value);
+//         });
+//         return { fields: cleanedFields };
+//       });
+  
+//       let logoBase64 = '';
+//       try {
+//         const logoRes = await fetch('/logo.png');
+//         if (!logoRes.ok) throw new Error('فشل في جلب الشعار');
+//         const logoBlob = await logoRes.blob();
+//         logoBase64 = await new Promise((resolve) => {
+//           const reader = new FileReader();
+//           reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+//           reader.readAsDataURL(logoBlob);
+//         });
+//       } catch (error) {
+//         console.error('Error fetching logo:', error);
+//       }
+  
+//       const employeeName = custody.fields['اسم الموظف'] || 'غير متوفر';
+//       const receiptDate = custody.fields['تاريخ الاستلام'] || 'غير متوفر';
+//       const email = custody.fields['Email'] || 'غير متوفر';
+//       const signatureDataUrl = custody.fields['التوقيع']?.[0]?.url
+//         ? await fetch(custody.fields['التوقيع'][0].url)
+//             .then((res) => res.blob())
+//             .then((blob) =>
+//               new Promise((resolve) => {
+//                 const reader = new FileReader();
+//                 reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+//                 reader.readAsDataURL(blob);
+//               })
+//             )
+//         : null;
+  
+//       const htmlContent = `
+//         <!DOCTYPE html>
+//         <html lang="ar">
+//         <head>
+//           <meta charset="UTF-8">
+//           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+//           <title>نموذج استلام عهدة</title>
+//           <style>
+//             body {
+//               font-family: Arial, sans-serif;
+//               direction: rtl;
+//               text-align: right;
+//               margin: 20px;
+//               padding: 0;
+//               font-size: 12px;
+//               line-height: 1.5;
+//               color: #333;
+//             }
+//             .header {
+//               position: relative;
+//               width: 100%;
+//               height: 60px;
+//               margin-bottom: 20px;
+//             }
+//             .logo {
+//               position: absolute;
+//               top: 0;
+//               right: 0;
+//               width: 100px;
+//               height: auto;
+//               max-height: 50px;
+//             }
+//             h1 {
+//               text-align: center;
+//               font-size: 24px;
+//               margin: 60px 0 20px 0;
+//               color: #1976d2;
+//               font-weight: bold;
+//             }
+//             .info {
+//               margin-bottom: 10px;
+//               font-size: 14px;
+//               font-weight: 500;
+//             }
+//             .info strong {
+//               font-weight: bold;
+//               color: #000;
+//             }
+//             table {
+//               width: 100%;
+//               border-collapse: collapse;
+//               margin-bottom: 20px;
+//               font-size: 10px;
+//               table-layout: fixed;
+//             }
+//             th, td {
+//               border: 1px solid #000;
+//               padding: 8px;
+//               text-align: right;
+//               word-wrap: break-word;
+//               overflow-wrap: break-word;
+//               white-space: normal;
+//               vertical-align: middle;
+//             }
+//             th {
+//               background-color: #f2f2f2;
+//               font-weight: bold;
+//               color: #000;
+//             }
+//             td {
+//               background-color: #fff;
+//             }
+//             th:nth-child(1), td:nth-child(1) { width: 20%; }
+//             th:nth-child(2), td:nth-child(2) { width: 20%; }
+//             th:nth-child(3), td:nth-child(3) { width: 20%; }
+//             th:nth-child(4), td:nth-child(4) { width: 20%; }
+//             th:nth-child(5), td:nth-child(5) { width: 20%; }
+//             .signature {
+//               margin-top: 30px;
+//               font-size: 14px;
+//             }
+//             .signature img {
+//               width: 120px;
+//               height: 60px;
+//               margin-top: 5px;
+//             }
+//             @media print {
+//               table { page-break-inside: auto; }
+//               tr { page-break-inside: avoid; page-break-after: auto; }
+//               thead { display: table-header-group; }
+//               tbody { display: table-row-group; }
+//             }
+//           </style>
+//         </head>
+//         <body>
+//           <div class="header">
+//             ${logoBase64 ? `<img src="data:image/png;base64,${logoBase64}" alt="Logo" class="logo" />` : '<div>الشعار غير متوفر</div>'}
+//           </div>
+//           <h1>نموذج استلام عهدة</h1>
+//           <div class="info"><strong>اسم الموظف:</strong> ${employeeName}</div>
+//           <div class="info"><strong>تاريخ الاستلام:</strong> ${receiptDate}</div>
+//           <div class="info"><strong>البريد الإلكتروني:</strong> ${email}</div>
+//           <div class="info"><strong>الأصول المستلمة:</strong></div>
+//           ${
+//             cleanedRecords.length > 0
+//               ? `
+//                 <table>
+//                   <thead>
+//                     <tr>
+//                       <th>اسم الأصل</th>
+//                       <th>رقم الأصل</th>
+//                       <th>الرقم التسلسلي</th>
+//                       <th>الشركة المصنعة</th>
+//                       <th>مواصفات إضافية</th>
+//                     </tr>
+//                   </thead>
+//                   <tbody>
+//                     ${cleanedRecords
+//                       .map((record) => {
+//                         const specs = record.fields['مواصفات اضافية '] || 'غير متوفر';
+//                         const specsLines = specs.split('\n').join('<br>');
+//                         return `
+//                           <tr>
+//                             <td>${record.fields['اسم الاصل']}</td>
+//                             <td>${record.fields['assetnum']}</td>
+//                             <td>${record.fields['الرقم التسلسلي']}</td>
+//                             <td>${record.fields['الشركة المصنعة']}</td>
+//                             <td>${specsLines}</td>
+//                           </tr>
+//                         `;
+//                       })
+//                       .join('')}
+//                   </tbody>
+//                 </table>
+//               `
+//               : '<div>لا توجد أصول مستلمة</div>'
+//           }
+//           <div class="signature">
+//             <div><strong>التوقيع:</strong></div>
+//             ${
+//               signatureDataUrl
+//                 ? `<img src="data:image/png;base64,${signatureDataUrl}" alt="Signature" />`
+//                 : '<div>لم يتم إضافة توقيع</div>'
+//             }
+//           </div>
+//         </body>
+//         </html>
+//       `;
+  
+//       const opt = {
+//         margin: [20, 20, 20, 20],
+//         filename: `custody_receipt_${custody.fields['رقم العهدة']}.pdf`,
+//         image: { type: 'jpeg', quality: 0.98 },
+//         html2canvas: {
+//           scale: 2,
+//           useCORS: true,
+//           logging: true,
+//         },
+//         jsPDF: {
+//           unit: 'mm',
+//           format: 'a4',
+//           orientation: 'portrait',
+//           putOnlyUsedFonts: true,
+//         },
+//       };
+  
+//       const html2pdf = (await import('html2pdf.js')).default;
+//       await html2pdf().set(opt).from(htmlContent).toPdf().get('pdf').then((pdf: any) => {
+//         pdf.save();
+//       });
+//       setIsProcessing(false);
+//       toast.success('تم تحميل نموذج استلام العهدة بنجاح!');
+//     } catch (error) {
+//       console.error('Error generating PDF:', error);
+//       setIsProcessing(false);
+//       toast.error('فشل في تحميل ملف PDF: ' + (error as Error).message);
+//     }
+//   };
 
 //   if (loading) {
 //     return <div className="text-center text-gray-500">جارٍ تحميل العهد...</div>;
@@ -647,7 +887,6 @@
 //       <div className="max-w-7xl mx-auto">
 //         <h2 className="text-3xl font-semibold text-gray-800 mb-6">إدارة العهد المستلمة</h2>
 
-//         {/* استبدال حقل البحث بمكون SearchInput */}
 //         <div className="mb-6 flex justify-start">
 //           <SearchInput
 //             value={searchQuery}
@@ -667,244 +906,251 @@
 //           </div>
 //         )}
 
-// {showModal && selectedEmployee && (
-//   <div className="min-w-screen h-screen animated fadeIn faster fixed left-0 top-0 flex justify-center items-center inset-0 z-50 outline-none focus:outline-none bg-no-repeat bg-center bg-cover">
-//     <div className="absolute inset-0 bg-black opacity-50 backdrop-blur-sm z-0"></div>
-//     <div
-//       className="w-full max-w-2xl p-5 relative mx-auto my-auto rounded-xl shadow-lg"
-//       style={{
-//         backgroundColor: 'rgba(255, 255, 255, 0.9)',
-//         backdropFilter: 'blur(8px)',
-//       }}
-//     >
-//       <div>
-//         <div className="text-center p-5 flex-auto justify-center">
-//           <h2 className="text-xl font-bold py-4">
-//             تفاصيل العهد للموظف: {selectedEmployee.employeeName}
-//           </h2>
-//         </div>
-//         {successMessage && (
-//           <div className="text-center text-green-500 mb-4">{successMessage}</div>
-//         )}
-//         <div className="p-3 max-h-96 overflow-y-auto">
-//           {selectedEmployee.custodies.map((custody) => (
-//             <div key={custody.id} className="mb-6 border-b pb-4">
-//               {editingCustody && editingCustody.id === custody.id ? (
-//                 <div>
-//                   <h3 className="text-lg font-semibold text-gray-800 mb-2">
-//                     تعديل العهدة: {custody.fields['رقم العهدة']}
-//                   </h3>
-//                   <div className="mb-2">
-//                     <label className="block text-gray-600">الملاحظات:</label>
-//                     <textarea
-//                       value={editingCustody.fields['ملاحظات'] || ''}
-//                       onChange={(e) =>
-//                         setEditingCustody({
-//                           ...editingCustody,
-//                           fields: {
-//                             ...editingCustody.fields,
-//                             'ملاحظات': e.target.value,
-//                           },
-//                         })
-//                       }
-//                       className="border rounded p-2 w-full"
-//                     />
-//                   </div>
-//                   <div className="mb-2">
-//                     <label className="block text-gray-600">الأصول المرتبطة:</label>
-//                     {editingCustody.assets && editingCustody.assets.length > 0 ? (
-//                       <ul className="list-disc mr-5">
-//                         {editingCustody.assets.map((asset) => (
-//                           <li key={asset.id} className="text-gray-600 flex justify-between items-center">
-//                             <span>رقم الأصل: {asset.fields['assetnum']}</span>
+//         {showModal && selectedEmployee && (
+//           <div className="min-w-screen h-screen animated fadeIn faster fixed left-0 top-0 flex justify-center items-center inset-0 z-50 outline-none focus:outline-none bg-no-repeat bg-center bg-cover">
+//             <div className="absolute inset-0 bg-black opacity-50 backdrop-blur-sm z-0"></div>
+//             <div
+//               className="w-full max-w-2xl p-5 relative mx-auto my-auto rounded-xl shadow-lg"
+//               style={{
+//                 backgroundColor: 'rgba(255, 255, 255, 0.9)',
+//                 backdropFilter: 'blur(8px)',
+//               }}
+//             >
+//               <div>
+//                 <div className="text-center p-5 flex-auto justify-center">
+//                   <h2 className="text-xl font-bold py-4">
+//                     تفاصيل العهد للموظف: {selectedEmployee.employeeName}
+//                   </h2>
+//                 </div>
+//                 {successMessage && (
+//                   <div className="text-center text-green-500 mb-4">{successMessage}</div>
+//                 )}
+//                 <div className="p-3 max-h-96 overflow-y-auto">
+//                   {selectedEmployee.custodies.map((custody) => (
+//                     <div key={custody.id} className="mb-6 border-b pb-4">
+//                       {editingCustody && editingCustody.id === custody.id ? (
+//                         <div>
+//                           <h3 className="text-lg font-semibold text-gray-800 mb-2">
+//                             تعديل العهدة: {custody.fields['رقم العهدة']}
+//                           </h3>
+//                           <div className="mb-2">
+//                             <label className="block text-gray-600">الملاحظات:</label>
+//                             <textarea
+//                               value={editingCustody.fields['ملاحظات'] || ''}
+//                               onChange={(e) =>
+//                                 setEditingCustody({
+//                                   ...editingCustody,
+//                                   fields: {
+//                                     ...editingCustody.fields,
+//                                     'ملاحظات': e.target.value,
+//                                   },
+//                                 })
+//                               }
+//                               className="border rounded p-2 w-full"
+//                             />
+//                           </div>
+//                           <div className="mb-2">
+//                             <label className="block text-gray-600">الأصول المرتبطة:</label>
+//                             {editingCustody.assets && editingCustody.assets.length > 0 ? (
+//                               <ul className="list-disc mr-5">
+//                                 {editingCustody.assets.map((asset) => (
+//                                   <li key={asset.id} className="text-gray-600 flex justify-between items-center">
+//                                     <span>رقم الأصل: {asset.fields['assetnum']}</span>
+//                                     <button
+//                                       onClick={() => startAssetRemoval(custody.id, asset.id)}
+//                                       className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+//                                     >
+//                                       حذف الاصل 
+//                                     </button>
+//                                   </li>
+//                                 ))}
+//                               </ul>
+//                             ) : (
+//                               <p className="text-gray-500">لا توجد أصول مرتبطة.</p>
+//                             )}
+//                           </div>
+//                           <div className="flex justify-end gap-2">
 //                             <button
-//                               onClick={() => startAssetRemoval(custody.id, asset.id)}
-//                               className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+//                               onClick={() =>
+//                                 updateCustody(custody.id, {
+//                                   'تاريخ الاستلام': editingCustody.fields['تاريخ الاستلام'],
+//                                   'ملاحظات': editingCustody.fields['ملاحظات'],
+//                                 })
+//                               }
+//                               className={`bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+//                               disabled={isProcessing || assetToRemove !== null}
 //                             >
-//                               حذف
+//                               حفظ
 //                             </button>
-//                           </li>
-//                         ))}
-//                       </ul>
-//                     ) : (
-//                       <p className="text-gray-500">لا توجد أصول مرتبطة.</p>
-//                     )}
-//                   </div>
-//                   <div className="flex justify-end gap-2">
+//                             <button
+//                               onClick={cancelEditing}
+//                               className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+//                             >
+//                               إلغاء
+//                             </button>
+//                           </div>
+//                         </div>
+//                       ) : (
+//                         <>
+//                           <h3 className="text-lg font-semibold text-gray-800 mb-2">
+//                             رقم العهدة: {custody.fields['رقم العهدة']}
+//                           </h3>
+//                           <p className="text-gray-600">
+//                             <strong>تاريخ الاستلام:</strong>{' '}
+//                             {custody.fields['تاريخ الاستلام']
+//                               ? new Date(custody.fields['تاريخ الاستلام']).toLocaleDateString('ar-EG')
+//                               : 'غير محدد'}
+//                           </p>
+//                           <p className="text-gray-600">
+//                             <strong>الاصول المرتبطة:</strong>
+//                           </p>
+//                           {custody.assets && custody.assets.length > 0 ? (
+//                             <ul className="list-disc mr-5">
+//                               {custody.assets.map((asset) => (
+//                                 <li key={asset.id} className="text-gray-600">
+//                                   رقم الاصل: {asset.fields['assetnum']}
+//                                 </li>
+//                               ))}
+//                             </ul>
+//                           ) : (
+//                             <p className="text-gray-500">لا توجد اصول مرتبطة.</p>
+//                           )}
+//                           <p className="text-gray-600">
+//                             <strong>الملاحظات:</strong>{' '}
+//                             {custody.fields['ملاحظات'] || 'لا توجد ملاحظات'}
+//                           </p>
+//                           <div className="flex justify-end gap-2 mt-2">
+//                             <button
+//                               onClick={() => startEditing(custody)}
+//                               className="bg-yellow-500 text-white px-4 py-1 rounded hover:bg-yellow-600"
+//                             >
+//                               تعديل
+//                             </button>
+//                             <button
+//                               onClick={() => startClearance(custody)}
+//                               className="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600"
+//                             >
+//                               اخلاء العهدة
+//                             </button>
+//                             <button
+//                               onClick={() => downloadCustodyPDF(custody)}
+//                               className={`bg-green-500 text-white px-4 py-1 rounded hover:bg-green-600 ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+//                               disabled={isProcessing}
+//                             >
+//                               تحميل كـ PDF
+//                             </button>
+//                           </div>
+//                         </>
+//                       )}
+//                     </div>
+//                   ))}
+//                 </div>
+//                 <div className="p-3 mt-2 text-center">
+//                   <button
+//                     onClick={closeModal}
+//                     className="bg-white px-5 py-2 text-sm shadow-sm font-medium tracking-wider border text-gray-600 rounded-full hover:shadow-lg hover:bg-gray-100"
+//                   >
+//                     إغلاق
+//                   </button>
+//                 </div>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {showAssetDeleteModal && editingCustody && (
+//           <div className="fixed inset-0 flex justify-center items-center z-50 bg-black bg-opacity-80">
+//             <div className="w-full max-w-lg p-5 bg-white rounded-xl shadow-lg">
+//               <div className="text-center p-5">
+//                 <svg
+//                   xmlns="http://www.w3.org/2000/svg"
+//                   className="w-16 h-16 text-red-500 mx-auto"
+//                   viewBox="0 0 20 20"
+//                   fill="currentColor"
+//                 >
+//                   <path
+//                     fillRule="evenodd"
+//                     d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+//                     clipRule="evenodd"
+//                   />
+//                 </svg>
+//                 <h2 className="text-xl font-bold py-4">هل أنت متأكد؟</h2>
+//                 <p className="text-sm text-gray-500 px-8">
+//                   هل تريد حقًا حذف هذا الأصل من العهدة؟ سيتم إرسال إشعار بالبريد الإلكتروني إلى {editingCustody.fields['Email']}.
+//                 </p>
+//               </div>
+//               <div className="p-3 text-center space-x-4">
+//                 <button
+//                   onClick={cancelAssetRemoval}
+//                   className="bg-white px-5 py-2 text-sm font-medium border text-gray-600 rounded-full hover:bg-gray-100"
+//                 >
+//                   إلغاء
+//                 </button>
+//                 <button
+//                   onClick={confirmAssetRemoval}
+//                   className={`bg-red-500 px-5 py-2 text-sm font-medium text-white rounded-full hover:bg-red-600 ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+//                   disabled={isProcessing}
+//                 >
+//                   حذف
+//                 </button>
+//               </div>
+//             </div>
+//           </div>
+//         )}
+
+//         {showClearanceModal && custodyToClear && (
+//           <div className="min-w-screen h-screen animated fadeIn faster fixed left-0 top-0 flex justify-center items-center inset-0 z-50 outline-none focus:outline-none bg-no-repeat bg-center bg-cover">
+//             <div className="absolute inset-0 bg-black opacity-50 backdrop-blur-sm z-0"></div>
+//             <div
+//               className="w-full max-w-md p-5 relative mx-auto my-auto rounded-xl shadow-lg"
+//               style={{
+//                 backgroundColor: 'rgba(255, 255, 255, 0.9)',
+//                 backdropFilter: 'blur(8px)',
+//               }}
+//             >
+//               <div>
+//                 <div className="text-center p-5 flex-auto justify-center">
+//                   <h2 className="text-xl font-bold py-4">إخلاء العهدة</h2>
+//                   <p className="text-gray-600 mb-4">
+//                     سيتم إرسال إشعار الإخلاء إلى: {custodyToClear.fields['Email']}
+//                   </p>
+//                 </div>
+//                 <div className="p-3">
+//                   <label className="block text-gray-600 mb-2">التوقيع:</label>
+//                   <ReactSketchCanvas
+//                     ref={canvasRef}
+//                     strokeWidth={4}
+//                     strokeColor="black"
+//                     canvasColor="white"
+//                     onChange={handleCanvasChange}
+//                     style={{ border: '1px solid #ccc', borderRadius: '4px', width: '100%', height: '150px' }}
+//                   />
+//                   <div className="flex justify-end gap-2 mt-4">
 //                     <button
-//                       onClick={() =>
-//                         updateCustody(custody.id, {
-//                           'تاريخ الاستلام': editingCustody.fields['تاريخ الاستلام'],
-//                           'ملاحظات': editingCustody.fields['ملاحظات'],
-//                         })
-//                       }
-//                       className={`bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
-//                       disabled={isProcessing || assetToRemove !== null}
+//                       onClick={() => canvasRef.current?.resetCanvas()}
+//                       className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
 //                     >
-//                       حفظ
+//                       مسح التوقيع
 //                     </button>
 //                     <button
-//                       onClick={cancelEditing}
-//                       className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+//                       onClick={clearCustody}
+//                       className={`bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+//                       disabled={isProcessing}
+//                     >
+//                       تأكيد الإخلاء
+//                     </button>
+//                     <button
+//                       onClick={closeClearanceModal}
+//                       className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
 //                     >
 //                       إلغاء
 //                     </button>
 //                   </div>
 //                 </div>
-//               ) : (
-//                 <>
-//                   <h3 className="text-lg font-semibold text-gray-800 mb-2">
-//                     رقم العهدة: {custody.fields['رقم العهدة']}
-//                   </h3>
-//                   <p className="text-gray-600">
-//                     <strong>تاريخ الاستلام:</strong>{' '}
-//                     {custody.fields['تاريخ الاستلام']
-//                       ? new Date(custody.fields['تاريخ الاستلام']).toLocaleDateString('ar-EG')
-//                       : 'غير محدد'}
-//                   </p>
-//                   <p className="text-gray-600">
-//                     <strong>الاصول المرتبطة:</strong>
-//                   </p>
-//                   {custody.assets && custody.assets.length > 0 ? (
-//                     <ul className="list-disc mr-5">
-//                       {custody.assets.map((asset) => (
-//                         <li key={asset.id} className="text-gray-600">
-//                           رقم الاصل: {asset.fields['assetnum']}
-//                         </li>
-//                       ))}
-//                     </ul>
-//                   ) : (
-//                     <p className="text-gray-500">لا توجد اصول مرتبطة.</p>
-//                   )}
-//                   <p className="text-gray-600">
-//                     <strong>الملاحظات:</strong>{' '}
-//                     {custody.fields['ملاحظات'] || 'لا توجد ملاحظات'}
-//                   </p>
-//                   <div className="flex justify-end gap-2 mt-2">
-//                     <button
-//                       onClick={() => startEditing(custody)}
-//                       className="bg-yellow-500 text-white px-4 py-1 rounded hover:bg-yellow-600"
-//                     >
-//                       تعديل
-//                     </button>
-//                     <button
-//                       onClick={() => startClearance(custody)}
-//                       className="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600"
-//                     >
-//                       حذف
-//                     </button>
-//                   </div>
-//                 </>
-//               )}
+//               </div>
 //             </div>
-//           ))}
-//         </div>
-//         <div className="p-3 mt-2 text-center">
-//           <button
-//             onClick={closeModal}
-//             className="bg-white px-5 py-2 text-sm shadow-sm font-medium tracking-wider border text-gray-600 rounded-full hover:shadow-lg hover:bg-gray-100"
-//           >
-//             إغلاق
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   </div>
-// )}
-
-// {showAssetDeleteModal && editingCustody && (
-//   <div className="fixed inset-0 flex justify-center items-center z-50 bg-black bg-opacity-80">
-//     <div className="w-full max-w-lg p-5 bg-white rounded-xl shadow-lg">
-//       <div className="text-center p-5">
-//         <svg
-//           xmlns="http://www.w3.org/2000/svg"
-//           className="w-16 h-16 text-red-500 mx-auto"
-//           viewBox="0 0 20 20"
-//           fill="currentColor"
-//         >
-//           <path
-//             fillRule="evenodd"
-//             d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-//             clipRule="evenodd"
-//           />
-//         </svg>
-//         <h2 className="text-xl font-bold py-4">هل أنت متأكد؟</h2>
-//         <p className="text-sm text-gray-500 px-8">
-//           هل تريد حقًا حذف هذا الأصل من العهدة؟ سيتم إرسال إشعار بالبريد الإلكتروني إلى {editingCustody.fields['Email']}.
-//         </p>
-//       </div>
-//       <div className="p-3 text-center space-x-4">
-//         <button
-//           onClick={cancelAssetRemoval}
-//           className="bg-white px-5 py-2 text-sm font-medium border text-gray-600 rounded-full hover:bg-gray-100"
-//         >
-//           إلغاء
-//         </button>
-//         <button
-//           onClick={confirmAssetRemoval}
-//           className={`bg-red-500 px-5 py-2 text-sm font-medium text-white rounded-full hover:bg-red-600 ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
-//           disabled={isProcessing}
-//         >
-//           حذف
-//         </button>
-//       </div>
-//     </div>
-//   </div>
-// )}
-
-// {showClearanceModal && custodyToClear && (
-//   <div className="min-w-screen h-screen animated fadeIn faster fixed left-0 top-0 flex justify-center items-center inset-0 z-50 outline-none focus:outline-none bg-no-repeat bg-center bg-cover">
-//     <div className="absolute inset-0 bg-black opacity-50 backdrop-blur-sm z-0"></div>
-//     <div
-//       className="w-full max-w-md p-5 relative mx-auto my-auto rounded-xl shadow-lg"
-//       style={{
-//         backgroundColor: 'rgba(255, 255, 255, 0.9)',
-//         backdropFilter: 'blur(8px)',
-//       }}
-//     >
-//       <div>
-//         <div className="text-center p-5 flex-auto justify-center">
-//           <h2 className="text-xl font-bold py-4">إخلاء العهدة</h2>
-//           <p className="text-gray-600 mb-4">
-//             سيتم إرسال إشعار الإخلاء إلى: {custodyToClear.fields['Email']}
-//           </p>
-//         </div>
-//         <div className="p-3">
-//           <label className="block text-gray-600 mb-2">التوقيع:</label>
-//           <ReactSketchCanvas
-//             ref={canvasRef}
-//             strokeWidth={4}
-//             strokeColor="black"
-//             canvasColor="white"
-//             onChange={handleCanvasChange} // إضافة onChange هنا
-//             style={{ border: '1px solid #ccc', borderRadius: '4px', width: '100%', height: '150px' }}
-//           />
-//           <div className="flex justify-end gap-2 mt-4">
-//             <button
-//               onClick={() => canvasRef.current?.resetCanvas()}
-//               className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-//             >
-//               مسح التوقيع
-//             </button>
-//             <button
-//               onClick={clearCustody}
-//               className={`bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
-//               disabled={isProcessing}
-//             >
-//               تأكيد الإخلاء
-//             </button>
-//             <button
-//               onClick={closeClearanceModal}
-//               className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-//             >
-//               إلغاء
-//             </button>
 //           </div>
-//         </div>
-//       </div>
-//     </div>
-//   </div>
-// )}
+//         )}
 
 //         {isProcessing && (
 //           <div className="fixed inset-0 flex justify-center items-center z-50">
@@ -994,67 +1240,35 @@
 //         }
 
 //         @keyframes envFloating {
-//           0% {
-//             transform: translate(-2px, -5px);
-//           }
-//           100% {
-//             transform: translate(0, 5px);
-//           }
+//           0% { transform: translate(-2px, -5px); }
+//           100% { transform: translate(0, 5px); }
 //         }
 
 //         @keyframes envDropping {
-//           0% {
-//             background-position: 100px 11px, 115px 35px, 105px 60px;
-//             opacity: 1;
-//           }
-//           50% {
-//             background-position: 0px 11px, 20px 35px, 5px 60px;
-//           }
-//           60% {
-//             background-position: -30px 11px, 0px 35px, -10px 60px;
-//           }
-//           75%,
-//           100% {
-//             background-position: -30px 11px, -30px 35px, -30px 60px;
-//             opacity: 0;
-//           }
+//           0% { background-position: 100px 11px, 115px 35px, 105px 60px; opacity: 1; }
+//           50% { background-position: 0px 11px, 20px 35px, 5px 60px; }
+//           60% { background-position: -30px 11px, 0px 35px, -10px 60px; }
+//           75%, 100% { background-position: -30px 11px, -30px 35px, -30px 60px; opacity: 0; }
 //         }
 
 //         @keyframes show-check {
-//           0% {
-//             opacity: 0;
-//             transform: scale(0);
-//           }
-//           100% {
-//             opacity: 1;
-//             transform: scale(1);
-//           }
+//           0% { opacity: 0; transform: scale(0); }
+//           100% { opacity: 1; transform: scale(1); }
 //         }
 
 //         @keyframes fade-out {
-//           0% {
-//             opacity: 1;
-//           }
-//           100% {
-//             opacity: 0;
-//           }
+//           0% { opacity: 1; }
+//           100% { opacity: 0; }
 //         }
 
 //         @keyframes hide-loader {
-//           0% {
-//             opacity: 1;
-//             transform: scale(1);
-//           }
-//           100% {
-//             opacity: 0;
-//             transform: scale(0);
-//           }
+//           0% { opacity: 1; transform: scale(1); }
+//           100% { opacity: 0; transform: scale(0); }
 //         }
 //       `}</style>
 //     </div>
 //   );
 // }
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -1064,7 +1278,6 @@ import { FaCheckCircle } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import html2pdf from 'html2pdf.js';
-
 
 // واجهات البيانات (Interfaces)
 interface Asset {
@@ -1102,6 +1315,72 @@ interface CardProps {
   employeeName: string;
   custodies: Custody[];
 }
+
+// دالة لتحويل رقم الأصل إلى نوع الأصل
+const getAssetType = (assetnum: string): string => {
+  if (!assetnum || assetnum.length < 2) return 'غير محدد';
+  const firstDigit = assetnum[0];
+  const secondDigit = assetnum[1];
+
+  switch (firstDigit) {
+    case '1':
+      return 'جهاز كمبيوتر';
+    case '2':
+      return 'لاب توب';
+    case '3':
+      return 'شاشة كمبيوتر';
+    case '4':
+      if (secondDigit >= '0' && secondDigit <= '4') return 'جوال';
+      if (secondDigit >= '5' && secondDigit <= '9') return 'تابلت';
+      return 'غير محدد';
+    case '5':
+      return 'شريحة اتصال';
+    case '6':
+      return 'تليفون شبكة';
+    case '7':
+      if (secondDigit >= '0' && secondDigit <= '4') return 'كيبورد';
+      if (secondDigit >= '5' && secondDigit <= '9') return 'ماوس';
+      return 'غير محدد';
+    case '8':
+      switch (secondDigit) {
+        case '1':
+          return 'طابعة';
+        case '2':
+          return 'سويتشات';
+        case '3':
+          return 'كيبل نت';
+        case '4':
+          return 'كيبل HDMI';
+        case '5':
+          return 'كاميرات';
+        case '6':
+          return 'جهاز DVR';
+        case '7':
+          return 'اكسس بوينت';
+        case '8':
+          return 'سماعات';
+        case '9':
+          return 'عدة صيانة';
+        default:
+          return 'غير محدد';
+      }
+    case '9':
+      switch (secondDigit) {
+        case '1':
+          return 'جهاز نقل الألياف';
+        case '2':
+          return 'جهاز بصمة';
+        case '3':
+          return 'وحدات تخزين';
+        case '4':
+          return 'أجهزة مكتبية';
+        default:
+          return 'غير محدد';
+      }
+    default:
+      return 'غير محدد';
+  }
+};
 
 // مكون البطاقة (Card)
 const Card: React.FC<CardProps> = ({ employeeName, custodies }) => {
@@ -2011,12 +2290,16 @@ export default function CustodyManagement() {
                               <ul className="list-disc mr-5">
                                 {editingCustody.assets.map((asset) => (
                                   <li key={asset.id} className="text-gray-600 flex justify-between items-center">
-                                    <span>رقم الأصل: {asset.fields['assetnum']}</span>
+                                    <span>
+                                      {getAssetType(asset.fields['assetnum']) !== 'غير محدد'
+                                        ? `${getAssetType(asset.fields['assetnum'])}: ${asset.fields['assetnum']}`
+                                        : `رقم الأصل: ${asset.fields['assetnum']}`}
+                                    </span>
                                     <button
                                       onClick={() => startAssetRemoval(custody.id, asset.id)}
                                       className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
                                     >
-                                      حذف الاصل 
+                                      حذف الأصل
                                     </button>
                                   </li>
                                 ))}
@@ -2058,18 +2341,20 @@ export default function CustodyManagement() {
                               : 'غير محدد'}
                           </p>
                           <p className="text-gray-600">
-                            <strong>الاصول المرتبطة:</strong>
+                            <strong>الأصول المرتبطة:</strong>
                           </p>
                           {custody.assets && custody.assets.length > 0 ? (
                             <ul className="list-disc mr-5">
                               {custody.assets.map((asset) => (
                                 <li key={asset.id} className="text-gray-600">
-                                  رقم الاصل: {asset.fields['assetnum']}
+                                  {getAssetType(asset.fields['assetnum']) !== 'غير محدد'
+                                    ? `${getAssetType(asset.fields['assetnum'])}: ${asset.fields['assetnum']}`
+                                    : `رقم الأصل: ${asset.fields['assetnum']}`}
                                 </li>
                               ))}
                             </ul>
                           ) : (
-                            <p className="text-gray-500">لا توجد اصول مرتبطة.</p>
+                            <p className="text-gray-500">لا توجد أصول مرتبطة.</p>
                           )}
                           <p className="text-gray-600">
                             <strong>الملاحظات:</strong>{' '}
@@ -2086,7 +2371,7 @@ export default function CustodyManagement() {
                               onClick={() => startClearance(custody)}
                               className="bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600"
                             >
-                              اخلاء العهدة
+                              إخلاء العهدة
                             </button>
                             <button
                               onClick={() => downloadCustodyPDF(custody)}

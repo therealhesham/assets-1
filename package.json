@@ -17,6 +17,7 @@
     "@react-pdf/renderer": "^4.3.0",
     "airtable": "^0.12.2",
     "arabic-reshaper": "^1.1.0",
+    "aws-sdk": "^2.1692.0",
     "axios": "^1.8.4",
     "bidi-js": "^1.0.3",
     "date-fns": "^4.1.0",
