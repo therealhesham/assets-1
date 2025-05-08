@@ -7,8 +7,8 @@
 // import path from 'path';
 // import { promises as fs } from 'fs';
 
-// // إعداد Airtable
-// const base = new Airtable({ apiKey: 'pathInbmmQ2GimI5Q.6994f95d5d0f915839960010ca25d49fe1d152b2d2be189a4508947684511e91' }).base('appwChimKKH5U0rtH');
+// // إعداد Airtable باستخدام متغير بيئي للمفتاح
+// const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY || 'pathInbmmQ2GimI5Q.6994f95d5d0f915839960010ca25d49fe1d152b2d2be189a4508947684511e91' }).base('appwChimKKH5U0rtH');
 
 // export async function GET() {
 //   try {
@@ -254,9 +254,11 @@
 //       ],
 //     };
 
+//     // إرسال البريد الإلكتروني أولاً
 //     const info = await transporter.sendMail(mailOptions);
 //     console.log('Email sent successfully:', info.messageId);
 
+//     // حذف العهدة فقط بعد نجاح إرسال البريد
 //     await base('العهد المستلمة').destroy(id);
 
 //     return NextResponse.json({ message: 'تم إخلاء العهدة وإرسال النموذج بنجاح' }, { status: 200 });
@@ -336,10 +338,6 @@
 //         'الشركة المصنعة': String(removedAsset.fields['الشركة المصنعة'] || 'غير متوفر'),
 //         'مواصفات اضافية ': String(removedAsset.fields['مواصفات اضافية '] || 'غير متوفر'),
 //       };
-
-//       const updatedRecord = await base('العهد المستلمة').update(id, {
-//         'رقم الاصل': updatedAssetIds,
-//       });
 
 //       // تحويل الشعار إلى Base64
 //       let logoBase64 = '';
@@ -455,8 +453,14 @@
 //         ],
 //       };
 
+//       // إرسال البريد الإلكتروني أولاً
 //       const info = await transporter.sendMail(mailOptions);
 //       console.log('Email sent successfully:', info.messageId);
+
+//       // تحديث العهدة فقط بعد نجاح إرسال البريد
+//       const updatedRecord = await base('العهد المستلمة').update(id, {
+//         'رقم الاصل': updatedAssetIds,
+//       });
 
 //       return NextResponse.json({ message: 'تم حذف الأصل وإرسال الإشعار بنجاح', record: updatedRecord }, { status: 200 });
 //     } else {
@@ -471,15 +475,50 @@
 //   }
 // }
 
+
 import { NextResponse } from 'next/server';
 import Airtable from 'airtable';
 import nodemailer from 'nodemailer';
 import puppeteer from 'puppeteer';
 import path from 'path';
 import { promises as fs } from 'fs';
+import AWS from 'aws-sdk';
 
-// إعداد Airtable باستخدام متغير بيئي للمفتاح
+// إعداد Airtable
 const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY || 'pathInbmmQ2GimI5Q.6994f95d5d0f915839960010ca25d49fe1d152b2d2be189a4508947684511e91' }).base('appwChimKKH5U0rtH');
+
+// إعداد DigitalOcean Spaces
+const spacesEndpoint = new AWS.Endpoint('https://sgp1.digitaloceanspaces.com');
+const s3 = new AWS.S3({
+  endpoint: spacesEndpoint,
+  accessKeyId: 'DO801T82UVGHTCP7ET2A',
+  secretAccessKey: '9onR3UUdlwij+AmG8ogloMO4Hp7+oN6HIVRWjRtkNgM',
+});
+
+// دالة لرفع الصورة إلى DigitalOcean Spaces
+async function uploadImageToSpaces(base64: string): Promise<string> {
+  try {
+    const base64Data = base64.split(',')[1]; // إزالة "data:image/png;base64,"
+    const buffer = Buffer.from(base64Data, 'base64');
+    const fileName = `signatures/signature-${Date.now()}.png`; // اسم الملف مع طابع زمني
+
+    const params = {
+      Bucket: 'assetspics', // اسم الباسكت
+      Key: fileName,
+      Body: buffer,
+      ContentType: 'image/png',
+      ACL: 'public-read', // جعل الصورة متاحة للعامة
+    };
+
+    console.log('Uploading image to DigitalOcean Spaces...');
+    const { Location } = await s3.upload(params).promise();
+    console.log('Image uploaded successfully:', Location);
+    return Location; // رابط الصورة
+  } catch (error) {
+    console.error('Error uploading image to DigitalOcean Spaces:', error);
+    throw new Error('فشل في رفع الصورة إلى DigitalOcean Spaces');
+  }
+}
 
 export async function GET() {
   try {
@@ -593,6 +632,12 @@ export async function DELETE(request: Request) {
       return { fields: cleanedFields };
     });
 
+    // رفع التوقيع إلى DigitalOcean Spaces
+    let signatureUrl = signature;
+    if (signature && signature.startsWith('data:image/')) {
+      signatureUrl = await uploadImageToSpaces(signature);
+    }
+
     // تحويل الشعار إلى Base64
     let logoBase64 = '';
     const logoPath = path.join(process.cwd(), 'public', 'logo.png');
@@ -668,7 +713,7 @@ export async function DELETE(request: Request) {
         }
         <div class="signature">
           <div>توقيع الموظف:</div>
-          <img src="${signature}" alt="Signature" />
+          <img src="${signatureUrl}" alt="Signature" />
         </div>
       </body>
       </html>
