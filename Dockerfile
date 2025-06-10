@@ -1,75 +1,96 @@
-# Install dependencies only when needed
-FROM node:20-slim AS deps
-WORKDIR /app
+# مرحلة القاعدة
+FROM node:20-slim AS base
 
-# Install dependencies
-COPY package.json package-lock.json* ./
-RUN npm ci
-
-# Rebuild the source code only when needed
-FROM node:20-slim AS builder
-WORKDIR /app
-
-COPY . .
-COPY --from=deps /app/node_modules ./node_modules
-RUN npm run build
-
-# Install `serve` to serve the app
-RUN npm install -g serve
-
-# Production image, copy all necessary files
-FROM node:20-slim AS runner
-WORKDIR /app
-
-ENV NODE_ENV production
-
-# Install dependencies for Puppeteer/Chrome
+# تثبيت التبعيات اللازمة لـ Chromium
 RUN apt-get update && apt-get install -y \
-    ca-certificates \
     fonts-liberation \
-    libappindicator3-1 \
     libasound2 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
+    libcairo2 \
     libcups2 \
     libdbus-1-3 \
-    libgdk-pixbuf2.0-0 \
+    libdrm2 \
+    libgbm1 \
+    libglib2.0-0 \
     libnspr4 \
     libnss3 \
     libx11-xcb1 \
     libxcomposite1 \
     libxdamage1 \
     libxrandr2 \
-    xdg-utils \
+    libxtst6 \
+    --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user
-RUN addgroup --gid 1001 appgroup && adduser --uid 1001 --gid 1001 --disabled-password --gecos "" appuser
+# إعداد مجلد العمل
+WORKDIR /app
 
-# Create and set permissions for Puppeteer cache directory
-RUN mkdir -p /tmp/puppeteer_cache && chmod -R 777 /tmp/puppeteer_cache
+# نسخ ملفات إعداد المشروع
+COPY package.json package-lock.json* ./
 
-# Set Puppeteer cache directory
+# تثبيت التبعيات (بما في ذلك Puppeteer)
+RUN npm ci
+
+# نسخ باقي ملفات المشروع
+COPY . .
+
+# مرحلة البناء
+FROM base AS builder
+WORKDIR /app
+RUN npm run build
+
+# مرحلة الإنتاج
+FROM node:20-slim AS runner
+WORKDIR /app
+
+# تثبيت التبعيات اللازمة لـ Chromium في مرحلة الإنتاج
+RUN apt-get update && apt-get install -y \
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcairo2 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgbm1 \
+    libglib2.0-0 \
+    libnspr4 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libxtst6 \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+# إعداد المتغيرات البيئية
+ENV NODE_ENV=production
 ENV PUPPETEER_CACHE_DIR=/tmp/puppeteer_cache
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
-# Install Chrome for Puppeteer
-RUN npx puppeteer browsers install chrome
+# إنشاء مجلد التخزين المؤقت وتعديل الأذونات
+RUN mkdir -p /tmp/puppeteer_cache \
+    && chown -R 1001:1001 /tmp/puppeteer_cache \
+    && chmod -R 777 /tmp/puppeteer_cache
 
-# Copy only the output of the build
-COPY --from=builder /app/public ./public
+# تثبيت التبعيات اللازمة للإنتاج فقط
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production && npm cache clean --force
+
+# نسخ مخرجات البناء
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/public ./public
 
-# Set ownership for app directory
-RUN chown -R appuser:appgroup /app
+# إعداد المستخدم غير الجذر للأمان
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+USER nextjs
 
-# Switch to non-root user
-USER appuser
-
-# Expose the port Next.js will run on
+# تعيين المنفذ
 EXPOSE 3000
+ENV PORT=3000
 
-# Start the Next.js app
-CMD ["npx", "next", "start"]
+# تشغيل التطبيق
+CMD ["npm", "start"]
