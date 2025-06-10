@@ -20,7 +20,8 @@ RUN apt-get update && apt-get install -y \
     libxdamage1 \
     libxrandr2 \
     libxtst6 \
-    --no-install-recommends \
+    libxkbcommon0 \  # إضافة مكتبة libxkbcommon0
+--no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # إعداد مجلد العمل
@@ -63,12 +64,14 @@ RUN apt-get update && apt-get install -y \
     libxdamage1 \
     libxrandr2 \
     libxtst6 \
-    --no-install-recommends \
+    libxkbcommon0 \  # إضافة مكتبة libxkbcommon0
+--no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # إعداد المتغيرات البيئية
 ENV NODE_ENV=production
 ENV PUPPETEER_CACHE_DIR=/tmp/puppeteer_cache
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 # إنشاء مجلد التخزين المؤقت وتعديل الأذونات
 RUN mkdir -p /tmp/puppeteer_cache \
@@ -86,13 +89,11 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 
 # تثبيت Puppeteer وإعداد المستخدم
-RUN npm init -y && npm install puppeteer && npm cache clean --force \
+RUN npm install puppeteer && npm cache clean --force \
     && groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
     && mkdir -p /home/pptruser/Downloads \
     && chown -R pptruser:pptruser /home/pptruser \
-    && chown -R pptruser:pptruser /app/node_modules \
-    && chown -R pptruser:pptruser /app/package.json \
-    && chown -R pptruser:pptruser /app/package-lock.json*
+    && chown -R pptruser:pptruser /app
 
 # إعداد المستخدم غير الجذر للأمان
 USER pptruser
