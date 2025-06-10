@@ -1,105 +1,75 @@
-# مرحلة القاعدة
-FROM node:20 AS base
-
-# تثبيت التبعيات اللازمة لـ Chromium
-RUN apt-get update && apt-get install -y \
-    fonts-liberation \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libcairo2 \
-    libcups2 \
-    libdbus-1-3 \
-    libdrm2 \
-    libgbm1 \
-    libglib2.0-0 \
-    libnspr4 \
-    libnss3 \
-    libx11-xcb1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    libxtst6 \
-    libxkbcommon0 \      --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
-
-# إعداد مجلد العمل
+# Install dependencies only when needed
+FROM node:20-slim AS deps
 WORKDIR /app
 
-# نسخ ملفات إعداد المشروع
-COPY package.json package-lock.json* ./ 
-
-# تثبيت التبعيات (بما في ذلك Puppeteer)
+# Install dependencies
+COPY package.json package-lock.json* ./
 RUN npm ci
 
-# نسخ باقي ملفات المشروع
-COPY . .
-
-# مرحلة البناء
-FROM base AS builder
+# Rebuild the source code only when needed
+FROM node:20-slim AS builder
 WORKDIR /app
+
+COPY . .
+COPY --from=deps /app/node_modules ./node_modules
 RUN npm run build
 
-# مرحلة الإنتاج
-FROM node:20 AS runner
+# Install `serve` to serve the app
+RUN npm install -g serve
+
+# Production image, copy all necessary files
+FROM node:20-slim AS runner
 WORKDIR /app
 
-# تثبيت التبعيات اللازمة لـ Chromium في مرحلة الإنتاج
+ENV NODE_ENV production
+
+# Install dependencies for Puppeteer/Chrome
 RUN apt-get update && apt-get install -y \
+    ca-certificates \
     fonts-liberation \
+    libappindicator3-1 \
     libasound2 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
-    libcairo2 \
     libcups2 \
     libdbus-1-3 \
-    libdrm2 \
-    libgbm1 \
-    libglib2.0-0 \
+    libgdk-pixbuf2.0-0 \
     libnspr4 \
     libnss3 \
     libx11-xcb1 \
     libxcomposite1 \
     libxdamage1 \
     libxrandr2 \
-    libxtst6 \
-    libxkbcommon0 \ 
-    --no-install-recommends \
+    xdg-utils \
     && rm -rf /var/lib/apt/lists/*
 
-# إعداد المتغيرات البيئية
-ENV NODE_ENV=production
+# Create a non-root user
+RUN addgroup --gid 1001 appgroup && adduser --uid 1001 --gid 1001 --disabled-password --gecos "" appuser
+
+# Create and set permissions for Puppeteer cache directory
+RUN mkdir -p /tmp/puppeteer_cache && chmod -R 777 /tmp/puppeteer_cache
+
+# Set Puppeteer cache directory
 ENV PUPPETEER_CACHE_DIR=/tmp/puppeteer_cache
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
-# إنشاء مجلد التخزين المؤقت وتعديل الأذونات
-RUN mkdir -p /tmp/puppeteer_cache \
-    && chown -R node:node /tmp/puppeteer_cache \
-    && chmod -R 777 /tmp/puppeteer_cache
+# Install Chrome for Puppeteer
+RUN npx puppeteer browsers install chrome
 
-# نسخ ملفات إعداد المشروع
-COPY package.json package-lock.json* ./ 
-
-# تثبيت التبعيات اللازمة للإنتاج فقط
-RUN npm ci --only=production && npm cache clean --force
-
-# نسخ مخرجات البناء
-COPY --from=builder /app/.next ./.next
+# Copy only the output of the build
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
-# تثبيت Puppeteer وإعداد المستخدم
-RUN npm install puppeteer && npm cache clean --force \
-    && groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
-    && mkdir -p /home/pptruser/Downloads \
-    && chown -R pptruser:pptruser /home/pptruser \
-    && chown -R pptruser:pptruser /app
+# Set ownership for app directory
+RUN chown -R appuser:appgroup /app
 
-# إعداد المستخدم غير الجذر للأمان
-USER pptruser
+# Switch to non-root user
+USER appuser
 
-# تعيين المنفذ
+# Expose the port Next.js will run on
 EXPOSE 3000
-ENV PORT=3000
 
-# تشغيل التطبيق
-CMD ["npm", "start"]
+# Start the Next.js app
+CMD ["npx", "next", "start"]
