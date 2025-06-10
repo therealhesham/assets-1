@@ -20,15 +20,14 @@ RUN apt-get update && apt-get install -y \
     libxdamage1 \
     libxrandr2 \
     libxtst6 \
-libxkbcommon0 \  # إضافة مكتبة libxkbcommon0 \
-    --no-install-recommends \
+    libxkbcommon0 \      --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # إعداد مجلد العمل
 WORKDIR /app
 
 # نسخ ملفات إعداد المشروع
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json* ./ 
 
 # تثبيت التبعيات (بما في ذلك Puppeteer)
 RUN npm ci
@@ -64,8 +63,8 @@ RUN apt-get update && apt-get install -y \
     libxdamage1 \
     libxrandr2 \
     libxtst6 \
-    libxkbcommon0 \  # إضافة مكتبة libxkbcommon0
---no-install-recommends \
+    libxkbcommon0 \ 
+    --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # إعداد المتغيرات البيئية
@@ -79,7 +78,7 @@ RUN mkdir -p /tmp/puppeteer_cache \
     && chmod -R 777 /tmp/puppeteer_cache
 
 # نسخ ملفات إعداد المشروع
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json* ./ 
 
 # تثبيت التبعيات اللازمة للإنتاج فقط
 RUN npm ci --only=production && npm cache clean --force
