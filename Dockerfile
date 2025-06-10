@@ -47,6 +47,8 @@ RUN apt-get update && apt-get install -y \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
     libxkbcommon0 \
+    libglib2.0-0 \
+    libgcc1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
@@ -58,11 +60,10 @@ RUN mkdir -p /tmp/puppeteer_cache && chmod -R 777 /tmp/puppeteer_cache
 # Set Puppeteer environment variables
 ENV PUPPETEER_CACHE_DIR=/tmp/puppeteer_cache
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
 
-# Install Chrome for Puppeteer as root and verify installation
+# Install Chrome for Puppeteer as root and debug installation
 RUN npx puppeteer browsers install chrome@134 && \
-    ls -la /tmp/puppeteer_cache
+    find / -name google-chrome 2>/dev/null || echo "Chrome not found"
 
 # Copy only the output of the build
 COPY --from=builder /app/public ./public
