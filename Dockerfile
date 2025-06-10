@@ -23,6 +23,26 @@ WORKDIR /app
 
 ENV NODE_ENV production
 
+# Install Puppeteer dependencies (for Chromium)
+RUN apk add --no-cache \
+    ca-certificates \
+    chromium \
+    nss \
+    freetype \
+    freetype-dev \
+    harfbuzz \
+    ttf-freefont \
+    && rm -rf /var/cache/apk/*
+
+# Create and set permissions for Puppeteer cache directory
+RUN mkdir -p /tmp/puppeteer_cache && chmod -R 777 /tmp/puppeteer_cache
+
+# Set Puppeteer cache directory
+ENV PUPPETEER_CACHE_DIR=/tmp/puppeteer_cache
+
+# Optionally set Puppeteer to use the installed Chromium
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 # Copy only the output of the build
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
