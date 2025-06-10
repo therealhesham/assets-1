@@ -23,31 +23,34 @@ WORKDIR /app
 
 ENV NODE_ENV production
 
-# Install Puppeteer dependencies (for Chromium)
+# Install Chromium and dependencies
 RUN apk add --no-cache \
-    ca-certificates \
     chromium \
     nss \
     freetype \
     freetype-dev \
     harfbuzz \
+    ca-certificates \
     ttf-freefont \
     && rm -rf /var/cache/apk/*
 
 # Create and set permissions for Puppeteer cache directory
 RUN mkdir -p /tmp/puppeteer_cache && chmod -R 777 /tmp/puppeteer_cache
 
-# Set Puppeteer cache directory
+# Set Puppeteer environment variables
 ENV PUPPETEER_CACHE_DIR=/tmp/puppeteer_cache
-
-# Optionally set Puppeteer to use the installed Chromium
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
 # Copy only the output of the build
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+
+# Run as non-root user for security
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
 
 # Expose the port Next.js will run on
 EXPOSE 3000
