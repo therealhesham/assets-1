@@ -14,14 +14,14 @@ COPY . .
 COPY --from=deps /app/node_modules ./node_modules
 RUN npm run build
 
-# Install `serve` to serve the app
+# Install `serve` to serve the app (optional, as you're using `next start`)
 RUN npm install -g serve
 
 # Production image, copy all necessary files
 FROM node:20-slim AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 # Install dependencies for Puppeteer/Chrome
 RUN apt-get update && apt-get install -y \
@@ -51,6 +51,7 @@ RUN apt-get update && apt-get install -y \
     libgcc1 \
     wget \
     gnupg \
+    --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
@@ -62,11 +63,12 @@ RUN mkdir -p /tmp/puppeteer_cache && chmod -R 777 /tmp/puppeteer_cache
 # Set Puppeteer environment variables
 ENV PUPPETEER_CACHE_DIR=/tmp/puppeteer_cache
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
 
-# Install Chrome manually as a fallback and debug installation
+# Install Chrome manually
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
     echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list && \
-    apt-get update && apt-get install -y google-chrome-stable && \
+    apt-get update && apt-get install -y google-chrome-stable --no-install-recommends && \
     rm -rf /var/lib/apt/lists/* && \
     google-chrome --version && \
     find / -name google-chrome 2>/dev/null || echo "Chrome not found"
