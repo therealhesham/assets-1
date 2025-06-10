@@ -1,96 +1,89 @@
-# مرحلة القاعدة
-FROM node:20-slim AS base
-
-# تثبيت التبعيات اللازمة لـ Chromium
-RUN apt-get update && apt-get install -y \
-    fonts-liberation \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libcairo2 \
-    libcups2 \
-    libdbus-1-3 \
-    libdrm2 \
-    libgbm1 \
-    libglib2.0-0 \
-    libnspr4 \
-    libnss3 \
-    libx11-xcb1 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxrandr2 \
-    libxtst6 \
-    --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
-
-# إعداد مجلد العمل
+# Install dependencies only when needed
+FROM node:20-slim AS deps
 WORKDIR /app
 
-# نسخ ملفات إعداد المشروع
+# Install dependencies
 COPY package.json package-lock.json* ./
-
-# تثبيت التبعيات (بما في ذلك Puppeteer)
 RUN npm ci
 
-# نسخ باقي ملفات المشروع
-COPY . .
-
-# مرحلة البناء
-FROM base AS builder
+# Rebuild the source code only when needed
+FROM node:20-slim AS builder
 WORKDIR /app
+
+COPY . .
+COPY --from=deps /app/node_modules ./node_modules
 RUN npm run build
 
-# مرحلة الإنتاج
+# Install `serve` to serve the app
+RUN npm install -g serve
+
+# Production image, copy all necessary files
 FROM node:20-slim AS runner
 WORKDIR /app
 
-# تثبيت التبعيات اللازمة لـ Chromium في مرحلة الإنتاج
-RUN apt-get update && apt-get install -y \
-    fonts-liberation \
+ENV NODE_ENV production
+
+# Install Chrome and dependencies
+RUN apt-get update \
+    && apt-get install -y wget gnupg \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    fonts-ipafont-gothic \
+    fonts-wqy-zenhei \
+    fonts-thai-tlwg \
+    fonts-kacst \
+    fonts-freefont-ttf \
+    libxss1 \
+    libappindicator3-1 \
     libasound2 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
-    libcairo2 \
     libcups2 \
     libdbus-1-3 \
-    libdrm2 \
-    libgbm1 \
-    libglib2.0-0 \
+    libgdk-pixbuf2.0-0 \
     libnspr4 \
     libnss3 \
     libx11-xcb1 \
     libxcomposite1 \
     libxdamage1 \
     libxrandr2 \
-    libxtst6 \
+    xdg-utils \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# إعداد المتغيرات البيئية
-ENV NODE_ENV=production
+# Create and set permissions for Puppeteer cache directory
+RUN mkdir -p /tmp/puppeteer_cache && chmod -R 777 /tmp/puppeteer_cache
+
+# Set Puppeteer environment variables
 ENV PUPPETEER_CACHE_DIR=/tmp/puppeteer_cache
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
 
-# إنشاء مجلد التخزين المؤقت وتعديل الأذونات
-RUN mkdir -p /tmp/puppeteer_cache \
-    && chown -R 1001:1001 /tmp/puppeteer_cache \
-    && chmod -R 777 /tmp/puppeteer_cache
+# Install Puppeteer and set up non-root user
+RUN npm init -y && npm install puppeteer \
+    && groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
+    && mkdir -p /home/pptruser/Downloads \
+    && chown -R pptruser:pptruser /home/pptruser \
+    && chown -R pptruser:pptruser /node_modules \
+    && chown -R pptruser:pptruser /package.json \
+    && chown -R pptruser:pptruser /package-lock.json \
+    && chown -R pptruser:pptruser /app
 
-# تثبيت التبعيات اللازمة للإنتاج فقط
-COPY package.json package-lock.json* ./
-RUN npm ci --only=production && npm cache clean --force
+# Install Chrome via Puppeteer (optional, as fallback)
+RUN npx puppeteer browsers install chrome
 
-# نسخ مخرجات البناء
-COPY --from=builder /app/.next ./.next
+# Copy only the output of the build
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
-# إعداد المستخدم غير الجذر للأمان
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-USER nextjs
+# Switch to non-root user
+USER pptruser
 
-# تعيين المنفذ
+# Expose the port Next.js will run on
 EXPOSE 3000
-ENV PORT=3000
 
-# تشغيل التطبيق
-CMD ["npm", "start"]
+# Start the Next.js app
+CMD ["npx", "next", "start"]
