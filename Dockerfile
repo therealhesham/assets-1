@@ -49,6 +49,8 @@ RUN apt-get update && apt-get install -y \
     libxkbcommon0 \
     libglib2.0-0 \
     libgcc1 \
+    wget \
+    gnupg \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
@@ -61,8 +63,12 @@ RUN mkdir -p /tmp/puppeteer_cache && chmod -R 777 /tmp/puppeteer_cache
 ENV PUPPETEER_CACHE_DIR=/tmp/puppeteer_cache
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
-# Install Chrome for Puppeteer as root and debug installation
-RUN npx puppeteer browsers install chrome@134 && \
+# Install Chrome manually as a fallback and debug installation
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && apt-get install -y google-chrome-stable && \
+    rm -rf /var/lib/apt/lists/* && \
+    google-chrome --version && \
     find / -name google-chrome 2>/dev/null || echo "Chrome not found"
 
 # Copy only the output of the build
