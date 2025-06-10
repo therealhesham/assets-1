@@ -1,5 +1,5 @@
 # Install dependencies only when needed
-FROM node:20 AS deps
+FROM node:20-slim AS deps
 WORKDIR /app
 
 # Install dependencies
@@ -7,7 +7,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 
 # Rebuild the source code only when needed
-FROM node:20  AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
 
 COPY . .
@@ -18,7 +18,7 @@ RUN npm run build
 RUN npm install -g serve
 
 # Production image, copy all necessary files
-FROM node:20  AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV production
@@ -53,31 +53,36 @@ RUN apt-get update \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
+# Create a non-root user
+RUN groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
+    && mkdir -p /home/pptruser/Downloads \
+    && chown -R pptruser:pptruser /home/pptruser
+
 # Create and set permissions for Puppeteer cache directory
-RUN mkdir -p /tmp/puppeteer_cache && chmod -R 777 /tmp/puppeteer_cache
+RUN mkdir -p /tmp/puppeteer_cache \
+    && chmod -R 777 /tmp/puppeteer_cache \
+    && chown -R pptruser:pptruser /tmp/puppeteer_cache
 
 # Set Puppeteer environment variables
 ENV PUPPETEER_CACHE_DIR=/tmp/puppeteer_cache
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
-# Install Puppeteer and set up non-root user
+# Install Puppeteer
 RUN npm init -y && npm install puppeteer \
-    && groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
-    && mkdir -p /home/pptruser/Downloads \
-    && chown -R pptruser:pptruser /home/pptruser \
+    && npx puppeteer browsers install chrome \
     && chown -R pptruser:pptruser /node_modules \
     && chown -R pptruser:pptruser /package.json \
-    && chown -R pptruser:pptruser /package-lock.json \
-    && chown -R pptruser:pptruser /app
-
-# Install Chrome via Puppeteer (optional, as fallback)
-RUN npx puppeteer browsers install chrome
+    && chown -R pptruser:pptruser /package-lock.json
 
 # Copy only the output of the build
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+
+# Set ownership for app directory
+RUN chown -R pptruser:pptruser /app
 
 # Switch to non-root user
 USER pptruser

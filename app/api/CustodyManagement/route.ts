@@ -679,9 +679,8 @@ export async function DELETE(request: Request) {
         <div class="info">تاريخ الإخلاء: ${new Date().toLocaleDateString('ar-EG')}</div>
         <div class="info">البريد الإلكتروني: ${email}</div>
         <div class="info">الاصول المرتبطة:</div>
-        ${
-          cleanedRecords.length > 0
-            ? `
+        ${cleanedRecords.length > 0
+        ? `
               <table>
                 <thead>
                   <tr>
@@ -694,8 +693,8 @@ export async function DELETE(request: Request) {
                 </thead>
                 <tbody>
                   ${cleanedRecords
-                    .map(
-                      (record: any) => `
+          .map(
+            (record: any) => `
                         <tr>
                           <td>${record.fields['اسم الاصل']}</td>
                           <td>${record.fields['assetnum']}</td>
@@ -704,13 +703,13 @@ export async function DELETE(request: Request) {
                           <td><pre>${record.fields['مواصفات اضافية ']}</pre></td>
                         </tr>
                       `
-                    )
-                    .join('')}
+          )
+          .join('')}
                 </tbody>
               </table>
             `
-            : '<div>لا توجد اصول مرتبطة</div>'
-        }
+        : '<div>لا توجد اصول مرتبطة</div>'
+      }
         <div class="signature">
           <div>توقيع الموظف:</div>
           <img src="${signatureUrl}" alt="Signature" />
@@ -718,9 +717,13 @@ export async function DELETE(request: Request) {
       </body>
       </html>
     `;
+    console.log('PUPPETEER_CACHE_DIR:', process.env.PUPPETEER_CACHE_DIR);
+    console.log('PUPPETEER_EXECUTABLE_PATH:', process.env.PUPPETEER_EXECUTABLE_PATH);
 
     const browser = await puppeteer.launch({
       headless: true,
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
+      userDataDir: process.env.PUPPETEER_CACHE_DIR || '/tmp/puppeteer_cache',
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     const page = await browser.newPage();
