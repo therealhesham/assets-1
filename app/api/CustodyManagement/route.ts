@@ -717,13 +717,9 @@ export async function DELETE(request: Request) {
       </body>
       </html>
     `;
-    console.log('PUPPETEER_CACHE_DIR:', process.env.PUPPETEER_CACHE_DIR);
-    console.log('PUPPETEER_EXECUTABLE_PATH:', process.env.PUPPETEER_EXECUTABLE_PATH);
 
     const browser = await puppeteer.launch({
       headless: true,
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
-      userDataDir: process.env.PUPPETEER_CACHE_DIR || '/tmp/puppeteer_cache',
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     const page = await browser.newPage();
@@ -921,12 +917,7 @@ export async function PATCH(request: Request) {
         </html>
       `;
 
-      console.log('PUPPETEER_CACHE_DIR:', process.env.PUPPETEER_CACHE_DIR);
-      console.log('PUPPETEER_EXECUTABLE_PATH:', process.env.PUPPETEER_EXECUTABLE_PATH);
       const browser = await puppeteer.launch({
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable',
-        userDataDir: process.env.PUPPETEER_CACHE_DIR || '/tmp/puppeteer_cache',
-
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
       });
