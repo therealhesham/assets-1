@@ -1,94 +1,109 @@
-# Install dependencies only when needed
-FROM node:20-bullseye AS deps
-WORKDIR /app
+# مرحلة القاعدة
+FROM node:20 AS base
 
-# Install dependencies
-COPY package.json package-lock.json* ./
-RUN npm ci
-
-# Rebuild the source code only when needed
-FROM node:20-bullseye AS builder
-WORKDIR /app
-
-COPY . .
-COPY --from=deps /app/node_modules ./node_modules
-RUN npm run build
-
-# Install `serve` to serve the app
-RUN npm install -g serve
-
-# Production image, copy all necessary files
-FROM node:20-bullseye AS runner
-WORKDIR /app
-
-ENV NODE_ENV production
-
-# Install Chrome and dependencies
-RUN apt-get update \
-    && apt-get install -y wget gnupg \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable \
-    fonts-ipafont-gothic \
-    fonts-wqy-zenhei \
-    fonts-thai-tlwg \
-    fonts-kacst \
-    fonts-freefont-ttf \
-    libxss1 \
-    libappindicator3-1 \
+# تثبيت التبعيات اللازمة لـ Chromium
+RUN apt-get update && apt-get install -y \
+    fonts-liberation \
     libasound2 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
+    libcairo2 \
     libcups2 \
     libdbus-1-3 \
-    libgdk-pixbuf2.0-0 \
+    libdrm2 \
+    libgbm1 \
+    libglib2.0-0 \
     libnspr4 \
     libnss3 \
     libx11-xcb1 \
     libxcomposite1 \
     libxdamage1 \
     libxrandr2 \
-    xdg-utils \
+    libxtst6 \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user
-RUN groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
-    && mkdir -p /home/pptruser/Downloads \
-    && chown -R pptruser:pptruser /home/pptruser
+# إعداد مجلد العمل
+WORKDIR /app
 
-# Create and set permissions for Puppeteer cache directory
-RUN mkdir -p /tmp/puppeteer_cache \
-    && chmod -R 777 /tmp/puppeteer_cache \
-    && chown -R pptruser:pptruser /tmp/puppeteer_cache
+# نسخ ملفات إعداد المشروع
+COPY package.json package-lock.json* ./
 
-# Set Puppeteer environment variables
+# تثبيت التبعيات (بما في ذلك Puppeteer)
+RUN npm ci
+
+# نسخ باقي ملفات المشروع
+COPY . .
+
+# مرحلة البناء
+FROM base AS builder
+WORKDIR /app
+RUN npm run build
+
+# مرحلة الإنتاج
+FROM node:20 AS runner
+WORKDIR /app
+
+# تثبيت التبعيات اللازمة لـ Chromium في مرحلة الإنتاج
+RUN apt-get update && apt-get install -y \
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcairo2 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgbm1 \
+    libglib2.0-0 \
+    libnspr4 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libxtst6 \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+# إعداد المتغيرات البيئية
+ENV NODE_ENV=production
 ENV PUPPETEER_CACHE_DIR=/tmp/puppeteer_cache
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 
-# Install Puppeteer
-RUN npm init -y && npm install puppeteer \
-    && npx puppeteer browsers install chrome \
+# إنشاء مجلد التخزين المؤقت وتعديل الأذونات
+RUN mkdir -p /tmp/puppeteer_cache \
+    && chown -R 1001:1001 /tmp/puppeteer_cache \
+    && chmod -R 777 /tmp/puppeteer_cache
+
+# تثبيت التبعيات اللازمة للإنتاج فقط
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production && npm cache clean --force
+
+# نسخ مخرجات البناء
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+
+
+# Install puppeteer so it's available in the container.
+RUN npm init -y &&  \
+    npm i puppeteer \
+    # Add user so we don't need --no-sandbox.
+    # same layer as npm install to keep re-chowned files from using up several hundred MBs more space
+    && groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
+    && mkdir -p /home/pptruser/Downloads \
+    && chown -R pptruser:pptruser /home/pptruser \
     && chown -R pptruser:pptruser /node_modules \
     && chown -R pptruser:pptruser /package.json \
     && chown -R pptruser:pptruser /package-lock.json
 
-# Copy only the output of the build
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+# إعداد المستخدم غير الجذر للأمان
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+USER nextjs
 
-# Set ownership for app directory
-RUN chown -R pptruser:pptruser /app
-
-# Switch to non-root user
-USER pptruser
-
-# Expose the port Next.js will run on
+# تعيين المنفذ
 EXPOSE 3000
+ENV PORT=3000
 
-# Start the Next.js app
-CMD ["npx", "next", "start"]
+# تشغيل التطبيق
+CMD ["npm", "start"]
