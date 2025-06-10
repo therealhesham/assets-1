@@ -1,5 +1,5 @@
 # Install dependencies only when needed
-FROM node:20-slim AS deps
+FROM node:20 AS deps
 WORKDIR /app
 
 # Install dependencies
@@ -7,7 +7,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 
 # Rebuild the source code only when needed
-FROM node:20-slim AS builder
+FROM node:20  AS builder
 WORKDIR /app
 
 COPY . .
@@ -18,7 +18,7 @@ RUN npm run build
 RUN npm install -g serve
 
 # Production image, copy all necessary files
-FROM node:20-slim AS runner
+FROM node:20  AS runner
 WORKDIR /app
 
 ENV NODE_ENV production
