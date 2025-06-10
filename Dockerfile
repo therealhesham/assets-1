@@ -72,34 +72,30 @@ ENV PUPPETEER_CACHE_DIR=/tmp/puppeteer_cache
 
 # إنشاء مجلد التخزين المؤقت وتعديل الأذونات
 RUN mkdir -p /tmp/puppeteer_cache \
-    && chown -R 1001:1001 /tmp/puppeteer_cache \
+    && chown -R node:node /tmp/puppeteer_cache \
     && chmod -R 777 /tmp/puppeteer_cache
 
-# تثبيت التبعيات اللازمة للإنتاج فقط
+# نسخ ملفات إعداد المشروع
 COPY package.json package-lock.json* ./
+
+# تثبيت التبعيات اللازمة للإنتاج فقط
 RUN npm ci --only=production && npm cache clean --force
 
 # نسخ مخرجات البناء
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 
-
-# Install puppeteer so it's available in the container.
-RUN npm init -y &&  \
-    npm i puppeteer \
-    # Add user so we don't need --no-sandbox.
-    # same layer as npm install to keep re-chowned files from using up several hundred MBs more space
+# تثبيت Puppeteer وإعداد المستخدم
+RUN npm init -y && npm install puppeteer && npm cache clean --force \
     && groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
     && mkdir -p /home/pptruser/Downloads \
     && chown -R pptruser:pptruser /home/pptruser \
-    && chown -R pptruser:pptruser /node_modules \
-    && chown -R pptruser:pptruser /package.json \
-    && chown -R pptruser:pptruser /package-lock.json
+    && chown -R pptruser:pptruser /app/node_modules \
+    && chown -R pptruser:pptruser /app/package.json \
+    && chown -R pptruser:pptruser /app/package-lock.json*
 
 # إعداد المستخدم غير الجذر للأمان
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-USER nextjs
+USER pptruser
 
 # تعيين المنفذ
 EXPOSE 3000
