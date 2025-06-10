@@ -41,6 +41,12 @@ RUN apt-get update && apt-get install -y \
     libxdamage1 \
     libxrandr2 \
     xdg-utils \
+    libxss1 \
+    libxtst6 \
+    libgbm-dev \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libxkbcommon0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a non-root user
@@ -49,12 +55,14 @@ RUN addgroup --gid 1001 appgroup && adduser --uid 1001 --gid 1001 --disabled-pas
 # Create and set permissions for Puppeteer cache directory
 RUN mkdir -p /tmp/puppeteer_cache && chmod -R 777 /tmp/puppeteer_cache
 
-# Set Puppeteer cache directory
+# Set Puppeteer environment variables
 ENV PUPPETEER_CACHE_DIR=/tmp/puppeteer_cache
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome
 
-# Install Chrome for Puppeteer
-RUN npx puppeteer browsers install chrome
+# Install Chrome for Puppeteer as root and verify installation
+RUN npx puppeteer browsers install chrome@134 && \
+    ls -la /tmp/puppeteer_cache
 
 # Copy only the output of the build
 COPY --from=builder /app/public ./public
