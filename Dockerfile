@@ -23,7 +23,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install dependencies for Puppeteer/Chrome
+# Install dependencies for Puppeteer/Chrome and Arabic locale
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     fonts-liberation \
@@ -51,8 +51,17 @@ RUN apt-get update && apt-get install -y \
     libgcc1 \
     wget \
     gnupg \
-    --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
+    locales \
+    fonts-arabic \
+    --no-install-recommends && \
+    locale-gen ar_EG.UTF-8 && \
+    update-locale LANG=ar_EG.UTF-8 && \
+    rm -rf /var/lib/apt/lists/*
+
+# إعداد اللغة العربية كلغة افتراضية
+ENV LANG=ar_EG.UTF-8
+ENV LANGUAGE=ar_EG:ar
+ENV LC_ALL=ar_EG.UTF-8
 
 # Create a non-root user
 RUN addgroup --gid 1001 appgroup && adduser --uid 1001 --gid 1001 --disabled-password --gecos "" appuser
