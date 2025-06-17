@@ -1102,8 +1102,15 @@ import { FaCheckCircle } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import styled from 'styled-components';
+import { format } from 'date-fns-tz'; // استيراد format من date-fns-tz
 
 registerLocale('ar', ar);
+
+// دالة لتنسيق التاريخ بناءً على توقيت السعودية
+const formatLocalDate = (date: Date | null): string => {
+  if (!date) return '';
+  return format(date, 'yyyy-MM-dd', { locale: ar, timeZone: 'Asia/Riyadh' });
+};
 
 // زر إضافة الأصل
 const Checkbox = ({ onChange, checked }: { onChange: () => void; checked: boolean }) => {
@@ -1401,7 +1408,7 @@ export default function Assets() {
     try {
       const formData = new FormData();
       formData.append('employeeName', employeeName);
-      formData.append('receiptDate', receiptDate ? receiptDate.toISOString().split('T')[0] : '');
+      formData.append('receiptDate', formatLocalDate(receiptDate)); // استخدام formatLocalDate
       formData.append('records', JSON.stringify(selectedRecords));
       formData.append('email', email);
 
@@ -1589,7 +1596,7 @@ export default function Assets() {
         body: JSON.stringify({
           records: selectedRecords,
           employeeName,
-          receiptDate: receiptDate.toISOString().split('T')[0],
+          receiptDate: formatLocalDate(receiptDate), // استخدام formatLocalDate
           email,
           signature: signatureData,
         }),
@@ -1974,9 +1981,9 @@ export default function Assets() {
                     <strong>البريد الإلكتروني:</strong> {email || 'غير متوفر'}
                   </p>
                   <p style={{ fontSize: '16px', marginBottom: '5px' }}>
-                    <strong>تاريخ الاستلام:</strong>{' '}
-                    {receiptDate ? receiptDate.toISOString().split('T')[0] : 'غير متوفر'}
-                  </p>
+  <strong>تاريخ الاستلام:</strong>{' '}
+  {receiptDate ? formatLocalDate(receiptDate) : 'غير متوفر'}
+</p>
                 </div>
                 <h2 style={{ fontSize: '18px', marginBottom: '10px' }}>الأصول المستلمة:</h2>
                 {selectedRecords.length > 0 ? (
