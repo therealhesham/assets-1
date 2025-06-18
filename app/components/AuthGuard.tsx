@@ -1,8 +1,8 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { useRouter } from 'next/navigation';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -10,12 +10,13 @@ interface AuthGuardProps {
 
 export default function AuthGuard({ children }: AuthGuardProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const router = useRouter();
 
-  // تعريف كلمات المرور المتعددة
-  const validPasswords: string[] = ['company123', 'omar'];
-
+  // التحقق من حالة المصادقة عند تحميل المكون
   useEffect(() => {
     const authStatus = sessionStorage.getItem('isAuthenticated');
     if (authStatus === 'true') {
@@ -23,26 +24,48 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     }
   }, []);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (validPasswords.includes(password)) {
+    setError('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'كلمة المرور أو البريد الإلكتروني غير صحيح');
+      }
+
       setIsAuthenticated(true);
       sessionStorage.setItem('isAuthenticated', 'true');
       setError('');
-    } else {
-      setError('كلمة المرور غير صحيحة');
+      router.push('/'); 
+    } catch (err: any) {
+      setError(err.message);
+      setEmail('');
       setPassword('');
+    } finally {
+      setLoading(false);
     }
   };
 
+  // معالجة تسجيل الخروج
   const handleLogout = () => {
     sessionStorage.removeItem('isAuthenticated');
     setIsAuthenticated(false);
+    setEmail('');
     setPassword('');
     setError('');
+    router.push('/'); // إعادة توجيه إلى صفحة تسجيل الدخول
   };
 
-  // تعريف الأنماط باستخدام styled-components
+  // الأنماط باستخدام styled-components (نفس الأنماط السابقة)
   const StyledWrapper = styled.div`
     .Btn {
       display: flex;
@@ -116,24 +139,45 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-          <h2 className="text-2xl font-semibold text-center mb-6">أدخل كلمة المرور</h2>
+          <h2 className="text-2xl font-semibold text-center mb-6">تسجيل الدخول</h2>
           {error && (
             <p className="text-red-500 text-center mb-4">{error}</p>
           )}
-          <form onSubmit={handleSubmit}>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="كلمة المرور"
-              className="w-full p-3 border border-gray-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              required
-            />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                البريد الإلكتروني
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="البريد الإلكتروني"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                كلمة المرور
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="كلمة المرور"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                required
+              />
+            </div>
             <button
               type="submit"
-              className="w-full bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700"
+              disabled={loading}
+              className={`w-full bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              دخول
+              {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
             </button>
           </form>
         </div>
