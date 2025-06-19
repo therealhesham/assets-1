@@ -33,7 +33,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
       const res = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ empid:email, password }),
       });
 
       const data = await res.json();
@@ -146,14 +146,14 @@ export default function AuthGuard({ children }: AuthGuardProps) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                البريد الإلكتروني
+                الـID
               </label>
               <input
-                id="email"
-                type="email"
+                id="text"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="البريد الإلكتروني"
+                placeholder="الID"
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 required
               />

@@ -5,15 +5,15 @@ const base = new Airtable({ apiKey: "pathInbmmQ2GimI5Q.6994f95d5d0f915839960010c
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const { empid, password } = await request.json();
 
-    if (!email || !password) {
+    if (!empid || !password) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
     const records = await base('users') 
       .select({
-        filterByFormula: `AND({Email} = "${email}", {Password} = "${password}")`, // افترض أن لديك حقلي Email و Password
+        filterByFormula: `AND({empid} = "${empid}", {Password} = "${password}")`, // افترض أن لديك حقلي Email و Password
         maxRecords: 1,
       })
       .firstPage();
