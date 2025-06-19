@@ -44,6 +44,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
 
       setIsAuthenticated(true);
       sessionStorage.setItem('isAuthenticated', 'true');
+      localStorage.setItem('name',data.user.name)
       setError('');
       router.push('/'); 
     } catch (err: any) {
