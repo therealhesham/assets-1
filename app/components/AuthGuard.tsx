@@ -444,23 +444,7 @@ setUser(storage)
       <nav className="navbar" dir="ltr">
         <div className="navbar-content">
           <div className="navbar-right">
-          <Style>
-            <button id="btn-user" className="button-user" >
-              <div className="content-avatar">
-                <div className="status-user" />
-                <div className="avatar">
-                  <svg className="user-img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path d="M12,12.5c-3.04,0-5.5,1.73-5.5,3.5s2.46,3.5,5.5,3.5,5.5-1.73,5.5-3.5-2.46-3.5-5.5-3.5Zm0-.5c1.66,0,3-1.34,3-3s-1.34-3-3-3-3,1.34-3,3,1.34,3,3,3Z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="notice-content">
-                <div className="username">{user}</div>
-                <div className="label-user">{user}</div>
-                {/* <div className="user-id">{getBranchDisplay(user.branch, user.role, user.selectedBranch)}</div> */}
-              </div>
-            </button>
-          </Style>
+        
             <div className="navbar-links logout-button">
               <StyledWrapper>
          
@@ -477,7 +461,25 @@ setUser(storage)
             </button>
             
               </StyledWrapper>
+              <Style>
+            <button id="btn-user" className="button-user" >
+              <div className="content-avatar">
+                <div className="status-user" />
+                <div className="avatar">
+                  <svg className="user-img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M12,12.5c-3.04,0-5.5,1.73-5.5,3.5s2.46,3.5,5.5,3.5,5.5-1.73,5.5-3.5-2.46-3.5-5.5-3.5Zm0-.5c1.66,0,3-1.34,3-3s-1.34-3-3-3-3,1.34-3,3,1.34,3,3,3Z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="notice-content">
+                <div className="username">{user}</div>
+                <div className="label-user">{user}</div>
+                {/* <div className="user-id">{getBranchDisplay(user.branch, user.role, user.selectedBranch)}</div> */}
+              </div>
+            </button>
+          </Style>
             </div>
+            
             
             <div className="navbar-links">
               <a href="/addasset" className="navbar-link text-md font-bold">
