@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     const records = await base('users') 
       .select({
-        filterByFormula: `AND({empid} = "${empid}", {Password} = "${password}")`, // افترض أن لديك حقلي Email و Password
+        filterByFormula: `AND({empid} = "${empid}", {Password} = "${password}")`,
         maxRecords: 1,
       })
       .firstPage();
@@ -24,8 +24,8 @@ export async function POST(request: Request) {
 
     const user = {
       id: records[0].id,
-      email: records[0].fields.Email,
-      name: records[0].fields.Name || '', 
+      email: records[0].fields.email,
+      name: records[0].fields.name || '', 
     };
 
     return NextResponse.json({ user }, { status: 200 });
