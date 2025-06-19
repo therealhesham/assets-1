@@ -388,7 +388,7 @@ export default function CustodyManagement() {
   const canvasRef = useRef<ReactSketchCanvasRef>(null);
   const [hasDrawn, setHasDrawn] = useState(false);
   const [showAssetDeleteModal, setShowAssetDeleteModal] = useState(false);
-
+const [user,setUser]=useState("")
   const handleCanvasChange = async () => {
     const paths = await canvasRef.current?.exportPaths();
     setHasDrawn(paths && paths.length > 0);
@@ -948,6 +948,7 @@ export default function CustodyManagement() {
 
   return (
     <div className="container mx-auto bg-gray-50 min-h-screen p-8 antialiased">
+      
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       <div className="max-w-7xl mx-auto">
         <h2 className="text-3xl font-semibold text-gray-800 mb-6">إدارة العهد المستلمة</h2>
