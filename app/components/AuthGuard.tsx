@@ -39,7 +39,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'كلمة المرور أو البريد الإلكتروني غير صحيح');
+        throw new Error(data.error || 'كلمة المرور أو الرقم التعريفي غير صحيح');
       }
 
       setIsAuthenticated(true);
