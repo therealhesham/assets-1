@@ -8,6 +8,7 @@ import { FaCheckCircle } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import html2pdf from 'html2pdf.js';
+import AuthGuard from '../components/AuthGuard';
 
 // واجهات البيانات (Interfaces)
 interface Asset {
@@ -947,6 +948,7 @@ const [user,setUser]=useState("")
   }
 
   return (
+    <AuthGuard>
     <div className="container mx-auto bg-gray-50 min-h-screen p-8 antialiased">
       
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
@@ -1339,5 +1341,6 @@ const [user,setUser]=useState("")
         }
       `}</style>
     </div>
+    </AuthGuard>
   );
 }

@@ -1,12 +1,14 @@
+// app/components/AuthGuard.tsx
 "use client";
-
-import { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import { useRouter } from 'next/navigation';
+import { useAuth } from "../context/AuthContext";
+import styled from "styled-components";
+import { ReactNode, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface AuthGuardProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
+
 const Style = styled.div`
   /* تنسيق زر تسجيل الخروج */
   .Btn {
@@ -259,154 +261,153 @@ const Style = styled.div`
   }
 `;
 
-export default function AuthGuard({ children }: AuthGuardProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [error, setError] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
-  const router = useRouter();
-const [user,setUser]=useState("")
-  // التحقق من حالة المصادقة عند تحميل المكون
-  useEffect(() => {
-    const authStatus = sessionStorage.getItem('isAuthenticated');
-    if (authStatus === 'true') {
-      setIsAuthenticated(true);
+const StyledWrapper = styled.div`
+  .Btn {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 45px;
+    height: 45px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition-duration: 0.3s;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.199);
+    background-color: rgb(255, 65, 65);
+  }
+
+  .sign {
+    width: 100%;
+    transition-duration: 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sign svg {
+    width: 17px;
+  }
+
+  .sign svg path {
+    fill: white;
+  }
+
+  .text {
+    position: absolute;
+    right: 0%;
+    width: 0%;
+    opacity: 0;
+    color: white;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition-duration: 0.3s;
+    white-space: nowrap;
+  }
+
+  .Btn:hover {
+    width: 125px;
+    border-radius: 40px;
+    transition-duration: 0.3s;
+  }
+
+  .Btn:hover .sign {
+    width: 30%;
+    transition-duration: 0.3s;
+    padding-left: 20px;
+  }
+
+  .Btn:hover .text {
+    opacity: 1;
+    width: 70%;
+    transition-duration: 0.3s;
+    padding-right: 10px;
+  }
+
+  .Btn:active {
+    transform: translate(2px, 2px);
+  }
+`;
+
+const NavbarWrapper = styled.nav`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  padding: 10px 20px;
+
+  .navbar-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .navbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .navbar-links {
+    a {
+      text-decoration: none;
+      color: #333;
+      font-size: 16px;
+      &:hover {
+        color: #007bff;
+      }
     }
-    const storage = localStorage.getItem("name")
-setUser(storage)
-  }, []);
+  }
+
+  .navbar-logo img {
+    height: 40px;
+  }
+`;
+
+export default function AuthGuard({ children }: AuthGuardProps) {
+  const { isAuthenticated, user, login, logout, error, loading } = useAuth();
+  const [empid, setEmpid] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const router = useRouter();
+
+  // إعادة توجيه إذا لم يكن المستخدم مصادقًا
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, loading, router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ empid:email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'كلمة المرور أو الرقم التعريفي غير صحيح');
-      }
-
-      setIsAuthenticated(true);
-      sessionStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('name',data.user.name)
-      setError('');
-      router.push('/'); 
-    } catch (err: any) {
-      setError(err.message);
-      setEmail('');
-      setPassword('');
-    } finally {
-      setLoading(false);
-    }
+    await login(empid, password);
+    setEmpid("");
+    setPassword("");
   };
 
-  // معالجة تسجيل الخروج
-  const handleLogout = () => {
-    sessionStorage.removeItem('isAuthenticated');
-    setIsAuthenticated(false);
-    setEmail('');
-    setPassword('');
-    setError('');
-    router.push('/'); // إعادة توجيه إلى صفحة تسجيل الدخول
-  };
-
-  // الأنماط باستخدام styled-components (نفس الأنماط السابقة)
-  const StyledWrapper = styled.div`
-    .Btn {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      width: 45px;
-      height: 45px;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      transition-duration: .3s;
-      box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.199);
-      background-color: rgb(255, 65, 65);
-    }
-
-    .sign {
-      width: 100%;
-      transition-duration: .3s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .sign svg {
-      width: 17px;
-    }
-
-    .sign svg path {
-      fill: white;
-    }
-
-    .text {
-      position: absolute;
-      right: 0%;
-      width: 0%;
-      opacity: 0;
-      color: white;
-      font-size: 0.9em;
-      font-weight: 600;
-      transition-duration: .3s;
-      white-space: nowrap;
-    }
-
-    .Btn:hover {
-      width: 125px;
-      border-radius: 40px;
-      transition-duration: .3s;
-    }
-
-    .Btn:hover .sign {
-      width: 30%;
-      transition-duration: .3s;
-      padding-left: 20px;
-    }
-
-    .Btn:hover .text {
-      opacity: 1;
-      width: 70%;
-      transition-duration: .3s;
-      padding-right: 10px;
-    }
-
-    .Btn:active {
-      transform: translate(2px, 2px);
-    }
-  `;
+  if (loading) {
+    return <div>جاري التحميل...</div>;
+  }
 
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
           <h2 className="text-2xl font-semibold text-center mb-6">تسجيل الدخول</h2>
-          {error && (
-            <p className="text-red-500 text-center mb-4">{error}</p>
-          )}
+          {error && <p className="text-red-500 text-center mb-4">{error}</p>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="empid" className="block text-sm font-medium text-gray-700">
                 الـID
               </label>
               <input
-                id="text"
+                id="empid"
                 type="text"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={empid}
+                onChange={(e) => setEmpid(e.target.value)}
                 placeholder="الID"
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 required
@@ -429,9 +430,9 @@ setUser(storage)
             <button
               type="submit"
               disabled={loading}
-              className={`w-full bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`w-full bg-indigo-600 text-white p-3 rounded-lg hover:bg-indigo-700 ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
             >
-              {loading ? 'جاري تسجيل الدخول...' : 'تسجيل الدخول'}
+              {loading ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
             </button>
           </form>
         </div>
@@ -440,15 +441,13 @@ setUser(storage)
   }
 
   return (
-    <>
-      <nav className="navbar" dir="ltr">
+    <div>
+      <NavbarWrapper className="navbar" dir="ltr">
         <div className="navbar-content">
           <div className="navbar-right">
-        
             <div className="navbar-links logout-button">
               <StyledWrapper>
-         
-                <button className="Btn" onClick={handleLogout}>
+                <button className="Btn" onClick={logout}>
                   <div className="sign">
                     <svg viewBox="0 0 512 512">
                       <path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z" />
@@ -456,31 +455,24 @@ setUser(storage)
                   </div>
                   <div className="text">تسجيل الخروج</div>
                 </button>
-                <button id="btn-user" className="button-user" >
-            
-            </button>
-            
               </StyledWrapper>
               <Style>
-            <button id="btn-user" className="button-user" >
-              <div className="content-avatar">
-                <div className="status-user" />
-                <div className="avatar">
-                  <svg className="user-img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path d="M12,12.5c-3.04,0-5.5,1.73-5.5,3.5s2.46,3.5,5.5,3.5,5.5-1.73,5.5-3.5-2.46-3.5-5.5-3.5Zm0-.5c1.66,0,3-1.34,3-3s-1.34-3-3-3-3,1.34-3,3,1.34,3,3,3Z" />
-                  </svg>
-                </div>
-              </div>
-              <div className="notice-content">
-                <div className="username">{user}</div>
-                <div className="label-user">{user}</div>
-                {/* <div className="user-id">{getBranchDisplay(user.branch, user.role, user.selectedBranch)}</div> */}
-              </div>
-            </button>
-          </Style>
+                <button id="btn-user" className="button-user">
+                  <div className="content-avatar">
+                    <div className="status-user" />
+                    <div className="avatar">
+                      <svg className="user-img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M12,12.5c-3.04,0-5.5,1.73-5.5,3.5s2.46,3.5,5.5,3.5,5.5-1.73,5.5-3.5-2.46-3.5-5.5-3.5Zm0-.5c1.66,0,3-1.34,3-3s-1.34-3-3-3-3,1.34-3,3,1.34,3,3,3Z" />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="notice-content">
+                    <div className="username">{user}</div>
+                    <div className="label-user">{user}</div>
+                  </div>
+                </button>
+              </Style>
             </div>
-            
-            
             <div className="navbar-links">
               <a href="/addasset" className="navbar-link text-md font-bold">
                 اضافة الأصول
@@ -502,16 +494,12 @@ setUser(storage)
               </a>
             </div>
             <div className="navbar-logo">
-              <img
-                src="/media/logo.png"
-                alt="Logo"
-                className="logo"
-              />
+              <img src="/media/logo.png" alt="Logo" className="logo" />
             </div>
           </div>
         </div>
-      </nav>
-      {children}
-    </>
+      </NavbarWrapper>
+      <main style={{ paddingTop: "60px" }}>{children}</main>
+    </div>
   );
 }

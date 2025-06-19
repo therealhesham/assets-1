@@ -1127,6 +1127,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ReactSketchCanvas } from 'react-sketch-canvas';
 import { FaDesktop, FaLaptop, FaPrint, FaNetworkWired, FaTv, FaServer, FaBox } from 'react-icons/fa';
 import { FaCheck, FaTimes } from 'react-icons/fa';
+import AuthGuard from '../components/AuthGuard';
 
 export default function AssetAdmin() {
   const router = useRouter();
@@ -1755,6 +1756,7 @@ export default function AssetAdmin() {
   };
 
   return (
+    <AuthGuard>
     <>
       <div className="container mx-auto bg-gray-50 min-h-screen p-4 sm:p-8 antialiased">
         <div className="max-w-7xl mx-auto">
@@ -2231,5 +2233,6 @@ export default function AssetAdmin() {
         }
       `}</style>
     </>
+    </AuthGuard>
   );
 }

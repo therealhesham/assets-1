@@ -747,6 +747,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ClipLoader } from 'react-spinners';
 import { FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { Tooltip } from 'react-tooltip';
+import AuthGuard from '../components/AuthGuard';
 
 const companies = [
   { value: 'dell | ديل', label: 'Dell | ديل' },
@@ -1238,6 +1239,7 @@ export default function AddAsset() {
   };
 
   return (
+    <AuthGuard>
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 relative">
       <div className="max-w-lg w-full bg-white p-8 rounded-lg shadow-lg">
         <h2 className="text-3xl font-semibold text-center text-gray-800 mb-6">إضافة أصل جديد</h2>
@@ -1465,5 +1467,6 @@ export default function AddAsset() {
       )}
       <ToastContainer />
     </div>
+    </AuthGuard>
   );
 }

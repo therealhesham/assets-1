@@ -1103,6 +1103,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import styled from 'styled-components';
 import { format } from 'date-fns-tz'; // استيراد format من date-fns-tz
+import AuthGuard from '../components/AuthGuard';
 
 registerLocale('ar', ar);
 
@@ -1732,6 +1733,7 @@ export default function Assets() {
   };
 
   return (
+    <AuthGuard>
     <div className="min-h-screen bg-gray-100">
       <ToastContainer
         position="top-right"
@@ -2203,5 +2205,6 @@ export default function Assets() {
         }
       `}</style>
     </div>
+    </AuthGuard>
   );
 }
