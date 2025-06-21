@@ -42,27 +42,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (empid: string, password: string) => {
     setError("");
     setLoading(true);
-
+  
     try {
       const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ empid, password }),
       });
-
+  
       const data = await res.json();
-
+  
       if (!res.ok) {
         throw new Error(data.error || "كلمة المرور أو الرقم التعريفي غير صحيح");
       }
-
+  
       setIsAuthenticated(true);
       setUser(data.user.name);
       sessionStorage.setItem("isAuthenticated", "true");
       localStorage.setItem("name", data.user.name);
+      localStorage.setItem("userId", data.user.id); // إضافة هذا السطر لتخزين id
       setError("");
       router.push("/");
-      router.refresh(); // تحديث الصفحة لضمان تحديث الحالة
+      router.refresh();
     } catch (err: any) {
       setError(err.message);
     } finally {
