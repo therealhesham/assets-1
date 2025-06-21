@@ -48,23 +48,29 @@ export default function TransferPage() {
   const rsCanvas = useRef<ReactSketchCanvasRef>(null);
   const [loading, setLoading] = useState(false);
   const [transferRequests, setTransferRequests] = useState<TransferRequest[]>([]);
-  const [userId, setUserId] = useState<string | null>(null); // إضافة حالة لـ userId
+  const [userId, setUserId] = useState<string | null>(null); // حالة لتخزين userId
+  const [isReady, setIsReady] = useState(false); // حالة للتحكم في التحقق
 
   // جلب userId من localStorage في جانب العميل فقط
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedUserId = localStorage.getItem("userId");
       setUserId(storedUserId);
+      setIsReady(true); // التحقق مكتمل
     }
   }, []);
 
+  // التحقق من المصادقة بعد توفر isReady
   useEffect(() => {
-    if (!user || !userId) {
-      router.push('/login');
-    } else {
-      fetchTransferRequests();
+    if (isReady) {
+      if (!user || !userId) {
+        console.log('TransferPage: المستخدم غير مصادق أو userId غير موجود، إعادة توجيه إلى /login');
+        router.push('/login');
+      } else {
+        fetchTransferRequests();
+      }
     }
-  }, [user, userId, router]);
+  }, [isReady, user, userId, router]);
 
   const fetchTransferRequests = async () => {
     if (!userId) return; // التحقق من وجود userId
@@ -238,7 +244,7 @@ export default function TransferPage() {
           <ClipLoader color="#2563eb" size={50} />
         </div>
       )}
-      {user && userId ? (
+      {isReady && user && userId ? (
         <>
           <div className="flex justify-between mb-4">
             <h1 className="text-2xl font-bold">تسليم واستلام الأصول</h1>
