@@ -48,9 +48,15 @@ export default function TransferPage() {
   const rsCanvas = useRef<ReactSketchCanvasRef>(null);
   const [loading, setLoading] = useState(false);
   const [transferRequests, setTransferRequests] = useState<TransferRequest[]>([]);
+  const [userId, setUserId] = useState<string | null>(null); // إضافة حالة لـ userId
 
-  // جلب userId من localStorage
-  const userId = localStorage.getItem("userId");
+  // جلب userId من localStorage في جانب العميل فقط
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedUserId = localStorage.getItem("userId");
+      setUserId(storedUserId);
+    }
+  }, []);
 
   useEffect(() => {
     if (!user || !userId) {
@@ -61,6 +67,7 @@ export default function TransferPage() {
   }, [user, userId, router]);
 
   const fetchTransferRequests = async () => {
+    if (!userId) return; // التحقق من وجود userId
     setLoading(true);
     try {
       const response = await fetch(`/api/transfer?userId=${userId}`);
@@ -91,7 +98,7 @@ export default function TransferPage() {
   };
 
   const handleSearch = async () => {
-    if (!searchQuery) return;
+    if (!searchQuery || !userId) return; // التحقق من وجود userId
     setLoading(true);
     try {
       const response = await fetch(`/api/transfer?search=${searchQuery}&userId=${userId}`);
@@ -130,7 +137,7 @@ export default function TransferPage() {
   };
 
   const handleSubmit = async () => {
-    if (!receiverId || !selectedAssets.length || !hasDrawn) {
+    if (!receiverId || !selectedAssets.length || !hasDrawn || !userId) {
       toast.error('يرجى ملء جميع الحقول وإضافة توقيع');
       return;
     }
