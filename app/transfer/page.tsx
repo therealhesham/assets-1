@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { ClipLoader } from 'react-spinners';
-import { ReactSketchCanvas, ReactSketchCanvasRef } from 'react-sketch-canvas';
+import { useState, useRef, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useRouter } from "next/navigation";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { ClipLoader } from "react-spinners";
+import { ReactSketchCanvas, ReactSketchCanvasRef } from "react-sketch-canvas";
 
 // تعريف الأنواع
 interface Asset {
   id: string;
   fields: {
     assetnum: number;
-    'اسم الاصل': string;
-    'الرقم التسلسلي'?: string;
-    'الشركة المصنعة'?: string;
-    'حالة الاصل'?: string;
-    'مواصفات اضافية'?: string;
-    'مستلم الاصل'?: string[];
+    "اسم الاصل": string;
+    "الرقم التسلسلي"?: string;
+    "الشركة المصنعة"?: string;
+    "حالة الاصل"?: string;
+    "مواصفات اضافية"?: string;
+    "مستلم الاصل"?: string[];
   };
 }
 
@@ -39,9 +39,9 @@ interface TransferRequest {
 export default function TransferPage() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const [receiverId, setReceiverId] = useState('');
+  const [receiverId, setReceiverId] = useState("");
   const [selectedAssets, setSelectedAssets] = useState<Asset[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Asset[]>([]);
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [hasDrawn, setHasDrawn] = useState(false);
@@ -53,9 +53,10 @@ export default function TransferPage() {
 
   // جلب userId من localStorage في جانب العميل فقط
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const storedUserId = localStorage.getItem("userId");
       setUserId(storedUserId);
+      console.log("User ID used in TransferPage:", storedUserId); // طباعة userId في الكونسول
       setIsReady(true);
     }
   }, []);
@@ -64,8 +65,11 @@ export default function TransferPage() {
   useEffect(() => {
     if (isReady) {
       if (!user || !userId) {
-        console.log('TransferPage: المستخدم غير مصادق أو userId غير موجود، إعادة توجيه إلى /login');
-        router.push('/login');
+        console.log(
+          "TransferPage: المستخدم غير مصادق أو userId غير موجود، إعادة توجيه إلى /login",
+          { user, userId }
+        );
+        router.push("/login");
       } else {
         fetchTransferRequests();
       }
@@ -73,11 +77,21 @@ export default function TransferPage() {
   }, [isReady, user, userId, router]);
 
   const fetchTransferRequests = async () => {
-    if (!userId) return;
+    if (!userId) {
+      toast.error("معرف المستخدم غير موجود");
+      return;
+    }
     setLoading(true);
     try {
-      const response = await fetch(`/api/transfer?userId=${userId}`);
-      if (!response.ok) throw new Error('فشل جلب الطلبات');
+      const response = await fetch(`/api/transfer?userId=${encodeURIComponent(userId)}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!response.ok) {
+        const errorText = await response.text(); // جلب نص الخطأ
+        console.error("API Error Response:", errorText);
+        throw new Error(`فشل جلب الطلبات: ${errorText || "طلب غير صالح"}`);
+      }
       const data: any[] = await response.json();
       const filteredRequests: TransferRequest[] = data
         .filter((item) => item.id && item.fields)
@@ -87,17 +101,21 @@ export default function TransferPage() {
             sender_id: Array.isArray(item.fields.sender_id) ? item.fields.sender_id : [],
             receiver_id: Array.isArray(item.fields.receiver_id) ? item.fields.receiver_id : [],
             assets: Array.isArray(item.fields.assets) ? item.fields.assets : [],
-            status: item.fields.status || 'Pending',
-            transfer_date: item.fields.transfer_date || '',
-            sender_signature: Array.isArray(item.fields.sender_signature) ? item.fields.sender_signature : [],
-            receiver_signature: Array.isArray(item.fields.receiver_signature) ? item.fields.receiver_signature : [],
-            sender_name: item.fields.sender_name || 'غير معروف',
+            status: item.fields.status || "Pending",
+            transfer_date: item.fields.transfer_date || "",
+            sender_signature: Array.isArray(item.fields.sender_signature)
+              ? item.fields.sender_signature
+              : [],
+            receiver_signature: Array.isArray(item.fields.receiver_signature)
+              ? item.fields.receiver_signature
+              : [],
+            sender_name: item.fields.sender_name || "غير معروف",
           },
         }));
       setTransferRequests(filteredRequests);
-    } catch (error) {
-      console.error('خطأ في جلب طلبات النقل:', error);
-      toast.error('فشل تحميل الطلبات');
+    } catch (error: any) {
+      console.error("خطأ في جلب طلبات النقل:", error);
+      toast.error(`فشل تحميل الطلبات: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -107,8 +125,19 @@ export default function TransferPage() {
     if (!searchQuery || !userId) return;
     setLoading(true);
     try {
-      const response = await fetch(`/api/transfer?search=${searchQuery}&userId=${userId}`);
-      if (!response.ok) throw new Error('فشل البحث عن الأصول');
+      const response = await fetch(
+        `/api/transfer?search=${encodeURIComponent(searchQuery)}&userId=${encodeURIComponent(
+          userId
+        )}`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`فشل البحث عن الأصول: ${errorText || "طلب غير صالح"}`);
+      }
       const data: any[] = await response.json();
       const filteredAssets: Asset[] = data
         .filter((item) => item.id && item.fields && item.fields.assetnum)
@@ -116,18 +145,18 @@ export default function TransferPage() {
           id: item.id,
           fields: {
             assetnum: item.fields.assetnum || 0,
-            'اسم الاصل': item.fields['اسم الاصل'] || 'غير معروف',
-            'الرقم التسلسلي': item.fields['الرقم التسلسلي'] || '',
-            'الشركة المصنعة': item.fields['الشركة المصنعة'] || '',
-            'حالة الاصل': item.fields['حالة الاصل'] || '',
-            'مواصفات اضافية': item.fields['مواصفات اضافية'] || '',
-            'مستلم الاصل': Array.isArray(item.fields['مستلم الاصل']) ? item.fields['مستلم الاصل'] : [],
+            "اسم الاصل": item.fields["اسم الاصل"] || "غير معروف",
+            "الرقم التسلسلي": item.fields["الرقم التسلسلي"] || "",
+            "الشركة المصنعة": item.fields["الشركة المصنعة"] || "",
+            "حالة الاصل": item.fields["حالة الاصل"] || "",
+            "مواصفات اضافية": item.fields["مواصفات اضافية"] || "",
+            "مستلم الاصل": Array.isArray(item.fields["مستلم الاصل"]) ? item.fields["مستلم الاصل"] : [],
           },
         }));
       setSearchResults(filteredAssets);
-    } catch (error) {
-      console.error('خطأ في البحث عن الأصول:', error);
-      toast.error('فشل البحث عن الأصول');
+    } catch (error: any) {
+      console.error("خطأ في البحث عن الأصول:", error);
+      toast.error(`فشل البحث عن الأصول: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -144,14 +173,14 @@ export default function TransferPage() {
 
   const handleSubmit = async () => {
     if (!receiverId || !selectedAssets.length || !hasDrawn || !userId) {
-      toast.error('يرجى ملء جميع الحقول وإضافة توقيع');
+      toast.error("يرجى ملء جميع الحقول وإضافة توقيع");
       return;
     }
     setLoading(true);
     try {
-      const response = await fetch('/api/transfer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/transfer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           senderId: userId,
           receiverId,
@@ -162,19 +191,19 @@ export default function TransferPage() {
       });
       const data = await response.json();
       if (response.ok) {
-        toast.success('تم إرسال طلب التسليم بنجاح');
+        toast.success("تم إرسال طلب التسليم بنجاح");
         setSelectedAssets([]);
-        setReceiverId('');
+        setReceiverId("");
         setSignatureData(null);
         setHasDrawn(false);
         rsCanvas.current?.resetCanvas();
         await fetchTransferRequests();
       } else {
-        toast.error(data.error || 'فشل إرسال الطلب');
+        toast.error(data.error || "فشل إرسال الطلب");
       }
-    } catch (error) {
-      console.error('خطأ في إرسال النقل:', error);
-      toast.error('حدث خطأ أثناء إرسال الطلب');
+    } catch (error: any) {
+      console.error("خطأ في إرسال النقل:", error);
+      toast.error("حدث خطأ أثناء إرسال الطلب");
     } finally {
       setLoading(false);
     }
@@ -182,26 +211,26 @@ export default function TransferPage() {
 
   const handleAccept = async (requestId: string) => {
     if (!hasDrawn) {
-      toast.error('يرجى إضافة توقيع لتأكيد القبول');
+      toast.error("يرجى إضافة توقيع لتأكيد القبول");
       return;
     }
     setLoading(true);
     try {
-      const response = await fetch('/api/transfer', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: requestId, status: 'Accepted', signature: signatureData }),
+      const response = await fetch("/api/transfer", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: requestId, status: "Accepted", signature: signatureData }),
       });
       const data = await response.json();
       if (response.ok) {
-        toast.success('تم قبول الطلب بنجاح');
+        toast.success("تم قبول الطلب بنجاح");
         await fetchTransferRequests();
       } else {
-        toast.error(data.error || 'فشل قبول الطلب');
+        toast.error(data.error || "فشل قبول الطلب");
       }
-    } catch (error) {
-      console.error('خطأ في قبول النقل:', error);
-      toast.error('حدث خطأ أثناء قبول الطلب');
+    } catch (error: any) {
+      console.error("خطأ في قبول النقل:", error);
+      toast.error("حدث خطأ أثناء قبول الطلب");
     } finally {
       setLoading(false);
     }
@@ -210,21 +239,21 @@ export default function TransferPage() {
   const handleReject = async (requestId: string) => {
     setLoading(true);
     try {
-      const response = await fetch('/api/transfer', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: requestId, status: 'Rejected' }),
+      const response = await fetch("/api/transfer", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: requestId, status: "Rejected" }),
       });
       const data = await response.json();
       if (response.ok) {
-        toast.success('تم رفض الطلب بنجاح');
+        toast.success("تم رفض الطلب بنجاح");
         await fetchTransferRequests();
       } else {
-        toast.error(data.error || 'فشل رفض الطلب');
+        toast.error(data.error || "فشل رفض الطلب");
       }
-    } catch (error) {
-      console.error('خطأ في رفض النقل:', error);
-      toast.error('حدث خطأ أثناء رفض الطلب');
+    } catch (error: any) {
+      console.error("خطأ في رفض النقل:", error);
+      toast.error("حدث خطأ أثناء رفض الطلب");
     } finally {
       setLoading(false);
     }
@@ -232,13 +261,13 @@ export default function TransferPage() {
 
   const saveSignature = async () => {
     if (rsCanvas.current) {
-      const data = await rsCanvas.current.exportImage('png');
+      const data = await rsCanvas.current.exportImage("png");
       if (data) {
         setSignatureData(data);
         setHasDrawn(true);
-        toast.success('تم حفظ التوقيع بنجاح');
+        toast.success("تم حفظ التوقيع بنجاح");
       } else {
-        toast.error('فشل حفظ التوقيع');
+        toast.error("فشل حفظ التوقيع");
       }
     }
   };
@@ -276,14 +305,17 @@ export default function TransferPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="ابحث عن الأصل برقم الأصل (assetnum)"
                 className="w-full p-2 border rounded"
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
               />
               {searchResults.length > 0 && (
                 <ul className="space-y-2">
                   {searchResults.map((asset) => (
                     <li key={asset.id} className="p-2 border rounded flex justify-between">
-                      <span>{asset.fields['اسم الاصل']} (#{asset.fields.assetnum})</span>
-                      <button onClick={() => handleAddAsset(asset)} className="bg-blue-500 text-white p-1 rounded">
+                      <span>{asset.fields["اسم الاصل"]} (#{asset.fields.assetnum})</span>
+                      <button
+                        onClick={() => handleAddAsset(asset)}
+                        className="bg-blue-500 text-white p-1 rounded"
+                      >
                         إضافة
                       </button>
                     </li>
@@ -295,8 +327,11 @@ export default function TransferPage() {
                 <ul className="space-y-2">
                   {selectedAssets.map((asset) => (
                     <li key={asset.id} className="p-2 border rounded flex justify-between">
-                      {asset.fields['اسم الاصل']} (#{asset.fields.assetnum})
-                      <button onClick={() => handleRemoveAsset(asset.id)} className="bg-red-500 text-white p-1 rounded">
+                      {asset.fields["اسم الاصل"]} (#{asset.fields.assetnum})
+                      <button
+                        onClick={() => handleRemoveAsset(asset.id)}
+                        className="bg-red-500 text-white p-1 rounded"
+                      >
                         إزالة
                       </button>
                     </li>
@@ -310,7 +345,10 @@ export default function TransferPage() {
                 strokeColor="black"
                 strokeWidth={3}
               />
-              <button onClick={saveSignature} className="bg-green-500 text-white p-2 rounded mr-2">
+              <button
+                onClick={saveSignature}
+                className="bg-green-500 text-white p-2 rounded mr-2"
+              >
                 حفظ التوقيع
               </button>
               <button
@@ -318,7 +356,7 @@ export default function TransferPage() {
                 disabled={loading || !hasDrawn || !selectedAssets.length || !receiverId}
                 className="bg-blue-500 text-white p-2 rounded"
               >
-                {loading ? 'جاري الإرسال...' : 'إرسال الطلب'}
+                {loading ? "جاري الإرسال..." : "إرسال الطلب"}
               </button>
             </div>
             <h2 className="text-xl font-semibold mt-6 mb-4">الطلبات الموجهة إليك</h2>
@@ -326,20 +364,22 @@ export default function TransferPage() {
               .filter((request) => request.fields.receiver_id.includes(userId))
               .map((request) => (
                 <div key={request.id} className="p-2 border rounded mb-2">
-                  <p>المرسل: {request.fields.sender_name || 'غير معروف'}</p>
+                  <p>المرسل: {request.fields.sender_name || "غير معروف"}</p>
                   <p>تاريخ الطلب: {request.fields.transfer_date}</p>
                   <ul>
                     {request.fields.assets.map((assetId) => {
                       const asset = searchResults.find((a) => a.id === assetId);
                       return (
                         <li key={assetId}>
-                          {asset ? `${asset.fields['اسم الاصل']} (#{asset.fields.assetnum})` : 'أصل غير معروف'}
+                          {asset
+                            ? `${asset.fields["اسم الاصل"]} (#{asset.fields.assetnum})`
+                            : "أصل غير معروف"}
                         </li>
                       );
                     })}
                   </ul>
                   <p>الحالة: {request.fields.status}</p>
-                  {request.fields.status === 'Pending' && (
+                  {request.fields.status === "Pending" && (
                     <div className="mt-2">
                       <ReactSketchCanvas
                         ref={rsCanvas}
@@ -348,17 +388,23 @@ export default function TransferPage() {
                         strokeColor="black"
                         strokeWidth={3}
                       />
-                      <button onClick={() => handleAccept(request.id)} className="bg-green-500 text-white p-2 rounded mr-2">
+                      <button
+                        onClick={() => handleAccept(request.id)}
+                        className="bg-green-500 text-white p-2 rounded mr-2"
+                      >
                         قبول
                       </button>
-                      <button onClick={() => handleReject(request.id)} className="bg-red-500 text-white p-2 rounded">
+                      <button
+                        onClick={() => handleReject(request.id)}
+                        className="bg-red-500 text-white p-2 rounded"
+                      >
                         رفض
                       </button>
                     </div>
                   )}
-                  {(request.fields.status === 'Accepted' || request.fields.status === 'Rejected') && (
+                  {(request.fields.status === "Accepted" || request.fields.status === "Rejected") && (
                     <div className="mt-2">
-                      <p>التوقيع: {request.fields.receiver_signature?.length ? 'موجود' : 'غير موجود'}</p>
+                      <p>التوقيع: {request.fields.receiver_signature?.length ? "موجود" : "غير موجود"}</p>
                     </div>
                   )}
                 </div>
