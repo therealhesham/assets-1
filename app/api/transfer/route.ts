@@ -42,11 +42,17 @@ interface UserFields {
 }
 
 async function uploadSignature(base64: string): Promise<string> {
-  const buffer = Buffer.from(base64.split(',')[1], 'base64');
-  const fileName = `signatures/transfer-${Date.now()}.png`;
-  const params = { Bucket: 'assetspics', Key: fileName, Body: buffer, ContentType: 'image/png', ACL: 'public-read' };
-  const { Location } = await s3.upload(params).promise();
-  return Location;
+  try {
+    const buffer = Buffer.from(base64.split(',')[1], 'base64');
+    const fileName = `signatures/transfer-${Date.now()}.png`;
+    const params = { Bucket: 'assetspics', Key: fileName, Body: buffer, ContentType: 'image/png', ACL: 'public-read' };
+    const { Location } = await s3.upload(params).promise();
+    console.log('Signature uploaded successfully:', Location);
+    return Location;
+  } catch (error) {
+    console.error('Error uploading signature to S3:', error);
+    throw new Error('فشل رفع التوقيع');
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -72,7 +78,6 @@ export async function GET(req: NextRequest) {
 
     const [assets, requests, users] = await Promise.all([assetsPromise, requestsPromise, usersPromise]);
 
-    // تحويل FieldSet إلى UserFields بأمان
     const userMap = users.reduce((map, user) => {
       const userFields = (user.fields as unknown) as UserFields;
       if (userFields && userFields.name) {
@@ -114,6 +119,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const { senderId, receiverId, assets, transferDate, signature } = await req.json();
+    console.log('Received POST data:', { senderId, receiverId, assets, transferDate, signature });
+
     if (!senderId || !receiverId || !assets || !transferDate) {
       return NextResponse.json({ error: 'حقول مطلوبة مفقودة' }, { status: 400 });
     }
@@ -125,7 +132,12 @@ export async function POST(req: NextRequest) {
 
     let signatureUrl: string | undefined;
     if (signature) {
-      signatureUrl = await uploadSignature(signature);
+      try {
+        signatureUrl = await uploadSignature(signature);
+      } catch (error) {
+        console.error('Failed to upload signature:', error);
+        return NextResponse.json({ error: 'فشل رفع التوقيع' }, { status: 500 });
+      }
     }
 
     const record = await base('Transfer Requests').create([
@@ -142,7 +154,6 @@ export async function POST(req: NextRequest) {
       },
     ]);
 
-    // تحويل FieldSet إلى UserFields بأمان
     const senderFields = (sender.fields as unknown) as UserFields;
     const receiverFields = (receiver.fields as unknown) as UserFields;
 
@@ -181,7 +192,12 @@ export async function PUT(req: NextRequest) {
 
     let signatureUrl: string | undefined;
     if (signature) {
-      signatureUrl = await uploadSignature(signature);
+      try {
+        signatureUrl = await uploadSignature(signature);
+      } catch (error) {
+        console.error('Failed to upload signature:', error);
+        return NextResponse.json({ error: 'فشل رفع التوقيع' }, { status: 500 });
+      }
     }
 
     await base('Transfer Requests').update([

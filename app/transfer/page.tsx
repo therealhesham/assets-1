@@ -48,15 +48,15 @@ export default function TransferPage() {
   const rsCanvas = useRef<ReactSketchCanvasRef>(null);
   const [loading, setLoading] = useState(false);
   const [transferRequests, setTransferRequests] = useState<TransferRequest[]>([]);
-  const [userId, setUserId] = useState<string | null>(null); // حالة لتخزين userId
-  const [isReady, setIsReady] = useState(false); // حالة للتحكم في التحقق
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   // جلب userId من localStorage في جانب العميل فقط
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedUserId = localStorage.getItem("userId");
       setUserId(storedUserId);
-      setIsReady(true); // التحقق مكتمل
+      setIsReady(true);
     }
   }, []);
 
@@ -73,7 +73,7 @@ export default function TransferPage() {
   }, [isReady, user, userId, router]);
 
   const fetchTransferRequests = async () => {
-    if (!userId) return; // التحقق من وجود userId
+    if (!userId) return;
     setLoading(true);
     try {
       const response = await fetch(`/api/transfer?userId=${userId}`);
@@ -104,7 +104,7 @@ export default function TransferPage() {
   };
 
   const handleSearch = async () => {
-    if (!searchQuery || !userId) return; // التحقق من وجود userId
+    if (!searchQuery || !userId) return;
     setLoading(true);
     try {
       const response = await fetch(`/api/transfer?search=${searchQuery}&userId=${userId}`);
@@ -231,9 +231,16 @@ export default function TransferPage() {
   };
 
   const saveSignature = async () => {
-    const data = await rsCanvas.current?.exportImage('png');
-    setSignatureData(data || null);
-    setHasDrawn(true);
+    if (rsCanvas.current) {
+      const data = await rsCanvas.current.exportImage('png');
+      if (data) {
+        setSignatureData(data);
+        setHasDrawn(true);
+        toast.success('تم حفظ التوقيع بنجاح');
+      } else {
+        toast.error('فشل حفظ التوقيع');
+      }
+    }
   };
 
   return (
