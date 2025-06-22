@@ -24,7 +24,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="empid" className="block text-sm font-medium text-gray-700">
-              الـID
+              الرقم الوظيفي
             </label>
             <input
               id="empid"
