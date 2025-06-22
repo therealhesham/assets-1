@@ -96,6 +96,7 @@
 //   return context;
 // };  
 // app/context/AuthContext.tsx
+// app/context/AuthContext.tsx
 "use client";
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
@@ -116,10 +117,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<string | null>(null);
   const [error, setError] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(true); // افتراضيًا true حتى يتم التحقق
+  const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
 
-  // التحقق من حالة المصادقة عند تحميل التطبيق
   useEffect(() => {
     const checkAuth = () => {
       const authStatus = sessionStorage.getItem("isAuthenticated");
@@ -155,7 +155,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(data.user.name);
       sessionStorage.setItem("isAuthenticated", "true");
       localStorage.setItem("name", data.user.name);
-      localStorage.setItem("userId", data.user.empid); // استخدام empid بدلاً من id
+      // استخدام empid من الاستجابة إذا كان موجودًا، وإلا استخدام id
+      const userId = data.user.empid || data.user.id;
+      localStorage.setItem("userId", userId);
       setError("");
       router.push("/");
       router.refresh();
@@ -169,7 +171,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     sessionStorage.removeItem("isAuthenticated");
     localStorage.removeItem("name");
-    localStorage.removeItem("userId"); // مسح userId عند تسجيل الخروج
+    localStorage.removeItem("userId");
     setIsAuthenticated(false);
     setUser(null);
     setError("");
