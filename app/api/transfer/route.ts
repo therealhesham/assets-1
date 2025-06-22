@@ -5,12 +5,11 @@ import AWS from 'aws-sdk';
 // إعداد Airtable
 const base = new Airtable({ apiKey: 'pathInbmmQ2GimI5Q.6994f95d5d0f915839960010ca25d49fe1d152b2d2be189a4508947684511e91' }).base('appwChimKKH5U0rtH');
 
-// إعداد DigitalOcean Spaces
-const spacesEndpoint = new AWS.Endpoint('https://sgp1.digitaloceanspaces.com');
+const spacesEndpoint = new AWS.Endpoint('https://sgp1.digitaloceanspaces.com'); // الـ Endpoint الصحيح لمنطقة sgp1
 const s3 = new AWS.S3({
   endpoint: spacesEndpoint,
-  accessKeyId: process.env.DO_ACCESS_KEY,
-  secretAccessKey: process.env.DO_SECRET_KEY,
+  accessKeyId: 'DO801T82UVGHTCP7ET2A',
+  secretAccessKey: '9onR3UUdlwij+AmG8ogloMO4Hp7+oN6HIVRWjRtkNgM',
 });
 
 // تعريف الأنواع
