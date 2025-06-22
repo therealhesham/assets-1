@@ -119,7 +119,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
 
-  // التحقق من حالة المصادقة عند تحميل التطبيق
   useEffect(() => {
     const checkAuth = () => {
       const authStatus = sessionStorage.getItem("isAuthenticated");
@@ -128,6 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (authStatus === "true" && storedUser && storedUserId) {
         setIsAuthenticated(true);
         setUser(storedUser);
+        console.log("Loaded userId from localStorage:", storedUserId); // طباعة userId عند التحميل
       } else {
         setIsAuthenticated(false);
         setUser(null);
@@ -150,15 +150,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!res.ok) {
         throw new Error(data.error || "كلمة المرور أو الرقم التعريفي غير صحيح");
       }
-      console.log("API Response:", data); // للتحقق من البيانات المُرجعة بما في ذلك empid
-      console.log("Received empid:", data.user.empid); // طباعة empid بشكل منفصل
+      console.log("API Response during login:", data); // طباعة الاستجابة الكاملة
+      console.log("Received empid from login:", data.user.empid); // طباعة empid
       setIsAuthenticated(true);
       setUser(data.user.name);
       sessionStorage.setItem("isAuthenticated", "true");
       localStorage.setItem("name", data.user.name);
-      // استخدام empid إذا كان موجودًا، وإلا استخدام id
-      const userId = data.user.empid || data.user.id;
+      const userId = data.user.empid; // استخدام empid فقط
       localStorage.setItem("userId", userId);
+      console.log("Stored userId:", userId); // طباعة userId المخزن
       setError("");
       router.push("/");
       router.refresh();

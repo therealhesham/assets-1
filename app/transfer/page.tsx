@@ -51,24 +51,22 @@ export default function TransferPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
 
-  // جلب userId من localStorage في جانب العميل فقط
   useEffect(() => {
     if (typeof window !== "undefined") {
       const storedUserId = localStorage.getItem("userId");
       setUserId(storedUserId);
-      console.log("User ID used in TransferPage:", storedUserId); // طباعة userId في الكونسول
+      console.log("User ID used in TransferPage:", storedUserId); // طباعة userId
       setIsReady(true);
     }
   }, []);
 
-  // التحقق من المصادقة بعد توفر isReady
   useEffect(() => {
     if (isReady) {
       if (!user || !userId) {
-        console.log(
-          "TransferPage: المستخدم غير مصادق أو userId غير موجود، إعادة توجيه إلى /login",
-          { user, userId }
-        );
+        console.log("TransferPage: المستخدم غير مصادق أو userId غير موجود، إعادة توجيه إلى /login", {
+          user,
+          userId,
+        });
         router.push("/login");
       } else {
         fetchTransferRequests();
@@ -83,12 +81,13 @@ export default function TransferPage() {
     }
     setLoading(true);
     try {
+      // إضافة معلمة افتراضية لـ query إذا لم يكن هناك بحث
       const response = await fetch(`/api/transfer?userId=${encodeURIComponent(userId)}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       });
       if (!response.ok) {
-        const errorText = await response.text(); // جلب نص الخطأ
+        const errorText = await response.text();
         console.error("API Error Response:", errorText);
         throw new Error(`فشل جلب الطلبات: ${errorText || "طلب غير صالح"}`);
       }
@@ -126,9 +125,7 @@ export default function TransferPage() {
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/transfer?search=${encodeURIComponent(searchQuery)}&userId=${encodeURIComponent(
-          userId
-        )}`,
+        `/api/transfer?search=${encodeURIComponent(searchQuery)}&userId=${encodeURIComponent(userId)}`,
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },

@@ -1,98 +1,89 @@
-import { NextRequest, NextResponse } from 'next/server';
-import Airtable from 'airtable';
-import AWS from 'aws-sdk';
+// app/api/transfer/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import Airtable from "airtable";
+import AWS from "aws-sdk";
 
 // إعداد Airtable
-const base = new Airtable({ apiKey: 'pathInbmmQ2GimI5Q.6994f95d5d0f915839960010ca25d49fe1d152b2d2be189a4508947684511e91' }).base('appwChimKKH5U0rtH');
+const base = new Airtable({
+  apiKey: "pathInbmmQ2GimI5Q.6994f95d5d0f915839960010ca25d49fe1d152b2d2be189a4508947684511e91",
+}).base("appwChimKKH5U0rtH");
 
 // إعداد DigitalOcean Spaces
-const spacesEndpoint = new AWS.Endpoint('https://sgp1.digitaloceanspaces.com'); // الـ Endpoint لمنطقة sgp1
+const spacesEndpoint = new AWS.Endpoint("https://sgp1.digitaloceanspaces.com");
 const s3 = new AWS.S3({
   endpoint: spacesEndpoint,
-  accessKeyId: 'DO801T82UVGHTCP7ET2A',
-  secretAccessKey: '9onR3UUdlwij+AmG8ogloMO4Hp7+oN6HIVRWjRtkNgM',
+  accessKeyId: "DO801T82UVGHTCP7ET2A",
+  secretAccessKey: "9onR3UUdlwij+AmG8ogloMO4Hp7+oN6HIVRWjRtkNgM",
 });
 
 // دالة لرفع الصورة إلى DigitalOcean Spaces
 async function uploadImageToSpaces(base64: string): Promise<string> {
   try {
-    console.log('Starting image upload process...');
-    const base64Data = base64.split(',')[1]; // إزالة "data:image/png;base64,"
-    const buffer = Buffer.from(base64Data, 'base64');
-    const fileName = `signatures/signature-${Date.now()}.png`; // اسم الملف مع طابع زمني
+    console.log("Starting image upload process...");
+    const base64Data = base64.split(",")[1];
+    const buffer = Buffer.from(base64Data, "base64");
+    const fileName = `signatures/signature-${Date.now()}.png`;
 
     const params = {
-      Bucket: 'assetspics', // اسم الباسكت
+      Bucket: "assetspics",
       Key: fileName,
       Body: buffer,
-      ContentType: 'image/png',
-      ACL: 'public-read', // جعل الصورة متاحة للعامة
+      ContentType: "image/png",
+      ACL: "public-read",
     };
 
-    console.log('Uploading image to DigitalOcean Spaces...');
+    console.log("Uploading image to DigitalOcean Spaces...");
     const { Location } = await s3.upload(params).promise();
-    console.log('Image uploaded successfully:', Location);
-    return Location; // رابط الصورة
+    console.log("Image uploaded successfully:", Location);
+    return Location;
   } catch (error) {
-    console.error('Error uploading image to DigitalOcean Spaces:', error);
-    throw new Error('فشل في رفع الصورة إلى DigitalOcean Spaces');
+    console.error("Error uploading image to DigitalOcean Spaces:", error);
+    throw new Error("فشل في رفع الصورة إلى DigitalOcean Spaces");
   }
 }
 
 // دالة GET لجلب السجلات
 export async function GET(req: NextRequest) {
   try {
-    console.log('GET request received at /api/transfer');
-    if (!req) {
-      console.log('No request object, returning default response');
-      return new Response(JSON.stringify({ message: 'Hello, world!' }), { status: 200 });
+    console.log("GET request received at /api/transfer");
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get("userId");
+    const query = searchParams.get("search"); // استخدام search بدلاً من query
+
+    console.log("Query parameters:", { userId, query });
+
+    if (!userId || isNaN(Number(userId))) {
+      console.log("Invalid userId parameter:", userId);
+      return NextResponse.json(
+        { error: "معرف المستخدم (empid) مطلوب ويجب أن يكون رقمًا" },
+        { status: 400 }
+      );
     }
 
-    const { searchParams } = new URL(req.url);
-    const query = searchParams.get('query');
-    const type = searchParams.get('type');
-    console.log('Query parameters:', { query, type });
-
-    if (type === 'received') {
-      const employeeName = searchParams.get('employeeName');
-      console.log('Fetching received records for employee:', employeeName);
-      const records = await base('العهد المستلمة')
+    let records;
+    if (query && !isNaN(Number(query))) {
+      console.log("Searching for asset with assetnum:", query);
+      records = await base("قائمة الاصول")
         .select({
-          filterByFormula: employeeName ? `{اسم الموظف} = "${employeeName}"` : '',
+          filterByFormula: `{assetnum} = ${Number(query)}`,
           maxRecords: 10,
         })
         .all();
-
-      if (records.length === 0) {
-        console.log('No records found for received custody');
-        return new NextResponse(JSON.stringify({ message: 'لم يتم العثور على سجلات للعهد المستلمة' }), { status: 404 });
-      }
-
-      const results = records.map((record) => ({
-        id: record.id,
-        fields: record.fields,
-      }));
-
-      console.log('Returning received records:', results);
-      return new NextResponse(JSON.stringify(results), { status: 200 });
+    } else {
+      console.log("Fetching transfer requests for userId:", userId);
+      records = await base("العهد المستلمة")
+        .select({
+          filterByFormula: `{اسم الموظف} = "${userId}"`,
+        })
+        .all();
     }
-
-    if (!query || isNaN(Number(query))) {
-      console.log('Invalid query parameter:', query);
-      return new NextResponse(JSON.stringify({ error: 'يرجى إدخال رقم الأصل الصحيح للبحث' }), { status: 400 });
-    }
-
-    console.log('Searching for asset with assetnum:', query);
-    const records = await base('قائمة الاصول')
-      .select({
-        filterByFormula: `{assetnum} = ${query}`,
-        maxRecords: 10,
-      })
-      .all();
 
     if (records.length === 0) {
-      console.log('No records found for assetnum:', query);
-      return new NextResponse(JSON.stringify({ message: 'لم يتم العثور على عهدة برقم الأصل المدخل' }), { status: 404 });
+      console.log("No records found for userId or query:", { userId, query });
+      return NextResponse.json(
+        { message: "لا توجد طلبات أو أصول متاحة" },
+        { status: 404 }
+      );
     }
 
     const results = records.map((record) => ({
@@ -100,122 +91,129 @@ export async function GET(req: NextRequest) {
       fields: record.fields,
     }));
 
-    console.log('Returning asset records:', results);
-    return new NextResponse(JSON.stringify(results), { status: 200 });
+    console.log("Returning records:", results);
+    return NextResponse.json(results, { status: 200 });
   } catch (error) {
-    console.error('Error in GET request:', error);
-    return new NextResponse(JSON.stringify({ error: 'حدث خطأ أثناء البحث' }), { status: 500 });
+    console.error("Error in GET request:", error);
+    return NextResponse.json(
+      { error: "حدث خطأ أثناء البحث" },
+      { status: 500 }
+    );
   }
 }
 
 // دالة POST لإنشاء سجل جديد
 export async function POST(req: NextRequest) {
   try {
-    console.log('POST request received at /api/transfer');
+    console.log("POST request received at /api/transfer");
     const body = await req.json();
-    console.log('Received POST body:', body);
+    console.log("Received POST body:", body);
 
-    const { records, employeeName, receiptDate, signature, email } = body;
+    const { senderId, receiverId, assets, transferDate, signature } = body;
 
-    if (!records || records.length === 0 || !employeeName || !receiptDate || !email) {
-      console.log('Missing required fields:', { records, employeeName, receiptDate, email });
-      return new NextResponse(JSON.stringify({ error: 'جميع الحقول (السجلات، اسم الموظف، تاريخ الاستلام، البريد الإلكتروني) مطلوبة' }), { status: 400 });
+    if (!senderId || !receiverId || !assets || !transferDate) {
+      console.log("Missing required fields:", { senderId, receiverId, assets, transferDate });
+      return NextResponse.json(
+        { error: "جميع الحقول (senderId, receiverId, assets, transferDate) مطلوبة" },
+        { status: 400 }
+      );
     }
 
-    // التحقق من حقل "مستلم الاصل" في جدول "قائمة الاصول"
-    for (const record of records) {
-      const assetNum = record.fields['assetnum'];
-      console.log('Checking assetnum:', assetNum);
-      const assetRecords = await base('قائمة الاصول')
-        .select({
-          filterByFormula: `{assetnum} = ${assetNum}`,
-          maxRecords: 1,
-        })
-        .all();
-
-      if (assetRecords.length === 0) {
-        console.log('Asset not found for assetnum:', assetNum);
-        return new NextResponse(JSON.stringify({ error: `لم يتم العثور على سجل في قائمة الاصول برقم الأصل ${assetNum}` }), { status: 404 });
-      }
-
-      const assetRecord = assetRecords[0];
-      const linkedCustody = assetRecord.fields['مستلم الاصل'];
-
-      if (linkedCustody && Array.isArray(linkedCustody) && linkedCustody.length > 0) {
-        const custodyRecord = await base('العهد المستلمة').find(linkedCustody[0]);
-        const currentCustodian = custodyRecord.fields['اسم الموظف'];
-        console.log('Asset already assigned to:', currentCustodian);
-        return new NextResponse(
-          JSON.stringify({ error: `الأصل ${assetNum} موجود بالفعل في عهدة ${currentCustodian}` }),
+    let signatureAttachment = null;
+    if (signature) {
+      if (!signature.startsWith("data:image/")) {
+        console.error("Invalid signature format:", signature);
+        return NextResponse.json(
+          { error: "التوقيع يجب أن يكون بصيغة Base64 صالحة" },
           { status: 400 }
         );
       }
-    }
-
-    // التحقق من التوقيع ورفعه إذا وجد
-    let signatureAttachment = null;
-    if (signature) {
-      if (!signature.startsWith('data:image/')) {
-        console.error('Invalid signature format:', signature);
-        return new NextResponse(JSON.stringify({ error: 'التوقيع يجب أن يكون بصيغة Base64 صالحة' }), { status: 400 });
-      }
-
       const imageUrl = await uploadImageToSpaces(signature);
       signatureAttachment = [
         {
           url: imageUrl,
-          filename: 'signature.png',
+          filename: "signature.png",
         },
       ];
     }
 
-    // استخراج معرفات السجلات من "قائمة الاصول"
-    const linkedRecords = await Promise.all(
-      records.map(async (record) => {
-        const assetNum = record.fields['assetnum'];
-        const assetRecords = await base('قائمة الاصول')
-          .select({
-            filterByFormula: `{assetnum} = ${assetNum}`,
-            maxRecords: 1,
-          })
-          .all();
-
-        if (assetRecords.length === 0) {
-          throw new Error(`لم يتم العثور على سجل في قائمة الاصول برقم الأصل ${assetNum}`);
-        }
-
-        return assetRecords[0].id;
-      })
-    );
-
-    // إنشاء سجل في جدول "العهد المستلمة"
-    const createdRecords = await base('العهد المستلمة').create([
+    const createdRecords = await base("العهد المستلمة").create([
       {
         fields: {
-          "رقم الاصل": linkedRecords,
-          "اسم الموظف": employeeName,
-          "تاريخ الاستلام": receiptDate,
+          "رقم الاصل": assets,
+          "اسم الموظف": receiverId,
+          "تاريخ الاستلام": transferDate,
           "Notes": "sss",
           "التوقيع": signatureAttachment,
-          "Email": email,
+          "Email": "example@email.com", // يمكن استبداله بقيمة ديناميكية
         },
       },
     ]);
 
-    // تحديث حقل "مستلم الاصل" في جدول "قائمة الاصول"
-    const custodyId = createdRecords[0].getId();
-    await Promise.all(
-      linkedRecords.map(async (assetId) => {
-        await base('قائمة الاصول').update(assetId, {
-          "مستلم الاصل": [custodyId],
-        });
-      })
+    console.log("Custody record created successfully");
+    return NextResponse.json(
+      { message: "تم تسجيل العهد المستلمة بنجاح", ids: createdRecords.map((r) => r.getId()) },
+      { status: 200 }
     );
-
-    console.log('Custody record created and linked successfully');
-    return new NextResponse(JSON.stringify({ message: 'تم تسجيل العهد المستلمة بنجاح', ids: createdRecords.map(r => r.getId()) }), { status: 200 });
   } catch (error) {
-    console.error('Error in POST request:', error);
-    return new NextResponse(JSON.stringify({ error: 'فشل في تسجيل العهد المستلمة: ' + error.message }), { status: 500 });
+    console.error("Error in POST request:", error);
+    return NextResponse.json(
+      { error: "فشل في تسجيل العهد المستلمة: " + error.message },
+      { status: 500 }
+    );
+  }
+}
+
+// دالة PUT لتحديث الحالة
+export async function PUT(req: NextRequest) {
+  try {
+    console.log("PUT request received at /api/transfer");
+    const body = await req.json();
+    console.log("Received PUT body:", body);
+
+    const { id, status, signature } = body;
+
+    if (!id || !status) {
+      console.log("Missing required fields:", { id, status });
+      return NextResponse.json(
+        { error: "حقول id وstatus مطلوبة" },
+        { status: 400 }
+      );
+    }
+
+    let signatureAttachment = null;
+    if (signature) {
+      if (!signature.startsWith("data:image/")) {
+        console.error("Invalid signature format:", signature);
+        return NextResponse.json(
+          { error: "التوقيع يجب أن يكون بصيغة Base64 صالحة" },
+          { status: 400 }
+        );
+      }
+      const imageUrl = await uploadImageToSpaces(signature);
+      signatureAttachment = [
+        {
+          url: imageUrl,
+          filename: "signature.png",
+        },
+      ];
+    }
+
+    const updatedRecord = await base("العهد المستلمة").update(id, {
+      "status": status,
+      "التوقيع": signatureAttachment,
+    });
+
+    console.log("Transfer request updated successfully");
+    return NextResponse.json(
+      { message: "تم تحديث الطلب بنجاح", id: updatedRecord.id },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error in PUT request:", error);
+    return NextResponse.json(
+      { error: "فشل في تحديث الطلب: " + error.message },
+      { status: 500 }
+    );
   }
 }
