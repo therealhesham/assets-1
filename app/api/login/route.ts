@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     }
 
     const user = {
-      id: records[0].fields.empid,
+      empid: records[0].fields.empid,
       email: records[0].fields.email,
       name: records[0].fields.name || '', 
     };
