@@ -43,6 +43,7 @@ interface UserFields {
 
 async function uploadSignature(base64: string): Promise<string> {
   try {
+    console.log('Starting signature upload process...');
     const buffer = Buffer.from(base64.split(',')[1], 'base64');
     const fileName = `signatures/transfer-${Date.now()}.png`;
     const params = { Bucket: 'assetspics', Key: fileName, Body: buffer, ContentType: 'image/png', ACL: 'public-read' };
@@ -57,9 +58,11 @@ async function uploadSignature(base64: string): Promise<string> {
 
 export async function GET(req: NextRequest) {
   try {
+    console.log('GET request received:', req.url);
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search');
     const userId = searchParams.get('userId');
+    console.log('Query params:', { search, userId });
 
     const assetsPromise = base('قائمة الاصول')
       .select({
@@ -111,35 +114,39 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(responseData);
   } catch (error) {
-    console.error('خطأ في GET:', error);
+    console.error('Error in GET request:', error);
     return NextResponse.json({ error: 'خطأ داخلي في الخادم' }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { senderId, receiverId, assets, transferDate, signature } = await req.json();
-    console.log('Received POST data:', { senderId, receiverId, assets, transferDate, signature });
+    console.log('POST request received');
+    const body = await req.json();
+    console.log('Received POST body:', body);
+
+    const { senderId, receiverId, assets, transferDate, signature } = body;
 
     if (!senderId || !receiverId || !assets || !transferDate) {
+      console.log('Missing required fields:', { senderId, receiverId, assets, transferDate });
       return NextResponse.json({ error: 'حقول مطلوبة مفقودة' }, { status: 400 });
     }
 
+    console.log('Fetching sender and receiver from Airtable...');
     const [sender, receiver] = await Promise.all([
       base('users').find(senderId),
       base('users').find(receiverId),
     ]);
+    console.log('Sender and receiver fetched successfully');
 
     let signatureUrl: string | undefined;
     if (signature) {
-      try {
-        signatureUrl = await uploadSignature(signature);
-      } catch (error) {
-        console.error('Failed to upload signature:', error);
-        return NextResponse.json({ error: 'فشل رفع التوقيع' }, { status: 500 });
-      }
+      console.log('Processing signature upload...');
+      signatureUrl = await uploadSignature(signature);
+      console.log('Signature URL:', signatureUrl);
     }
 
+    console.log('Creating transfer request in Airtable...');
     const record = await base('Transfer Requests').create([
       {
         fields: {
@@ -153,6 +160,7 @@ export async function POST(req: NextRequest) {
         },
       },
     ]);
+    console.log('Transfer request created:', record[0].id);
 
     const senderFields = (sender.fields as unknown) as UserFields;
     const receiverFields = (receiver.fields as unknown) as UserFields;
@@ -164,6 +172,7 @@ export async function POST(req: NextRequest) {
       <p>الرجاء التحقق من <a href="http://yourdomain.com/transfer">الصفحة</a>.</p>
     `;
 
+    console.log('Sending email notification...');
     await fetch('/api/SEND-MAIL', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -175,31 +184,35 @@ export async function POST(req: NextRequest) {
         signature,
       }),
     });
+    console.log('Email notification sent');
 
     return NextResponse.json({ message: 'تم إنشاء طلب النقل', id: record[0].id });
   } catch (error) {
-    console.error('خطأ في POST:', error);
+    console.error('Error in POST request:', error);
     return NextResponse.json({ error: 'خطأ داخلي في الخادم' }, { status: 500 });
   }
 }
 
 export async function PUT(req: NextRequest) {
   try {
-    const { id, status, signature } = await req.json();
+    console.log('PUT request received');
+    const body = await req.json();
+    console.log('Received PUT body:', body);
+
+    const { id, status, signature } = body;
     if (!id || !status) {
+      console.log('Missing required fields:', { id, status });
       return NextResponse.json({ error: 'حقول مطلوبة مفقودة' }, { status: 400 });
     }
 
     let signatureUrl: string | undefined;
     if (signature) {
-      try {
-        signatureUrl = await uploadSignature(signature);
-      } catch (error) {
-        console.error('Failed to upload signature:', error);
-        return NextResponse.json({ error: 'فشل رفع التوقيع' }, { status: 500 });
-      }
+      console.log('Processing signature upload...');
+      signatureUrl = await uploadSignature(signature);
+      console.log('Signature URL:', signatureUrl);
     }
 
+    console.log('Updating transfer request in Airtable...');
     await base('Transfer Requests').update([
       {
         id,
@@ -209,10 +222,11 @@ export async function PUT(req: NextRequest) {
         },
       },
     ]);
+    console.log('Transfer request updated');
 
     return NextResponse.json({ message: 'تم تحديث النقل' });
   } catch (error) {
-    console.error('خطأ في PUT:', error);
+    console.error('Error in PUT request:', error);
     return NextResponse.json({ error: 'خطأ داخلي في الخادم' }, { status: 500 });
   }
 }
