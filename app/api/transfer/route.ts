@@ -89,65 +89,77 @@ export async function GET(req: NextRequest) {
 
 // دالة POST لإنشاء سجل جديد
 export async function POST(req: NextRequest) {
-  try {
-    console.log("POST request received at /api/transfer");
-    const body = await req.json();
-    console.log("Received POST body:", body);
-
-    const { senderId, receiverId, assets, transferDate, signature } = body;
-
-    if (!senderId || !receiverId || !assets || !transferDate) {
-      console.log("Missing required fields:", { senderId, receiverId, assets, transferDate });
-      return NextResponse.json(
-        { error: "جميع الحقول (senderId, receiverId, assets, transferDate) مطلوبة" },
-        { status: 400 }
-      );
-    }
-
-    let signatureAttachment = null;
-    if (signature) {
-      if (!signature.startsWith("data:image/")) {
-        console.error("Invalid signature format:", signature);
+    try {
+      console.log("POST request received at /api/transfer");
+      const body = await req.json();
+      console.log("Received POST body:", body);
+  
+      const { sender_id, receiver_id, assets, transfer_date, sender_signature, receiver_signature } = body;
+  
+      // التحقق من الحقول الإجبارية
+      if (!sender_id || !receiver_id || !assets || !transfer_date) {
         return NextResponse.json(
-          { error: "التوقيع يجب أن يكون بصيغة Base64 صالحة" },
+          { error: "الحقول الإجبارية: sender_id, receiver_id, assets, transfer_date" },
           { status: 400 }
         );
       }
-      const imageUrl = await uploadImageToSpaces(signature);
-      signatureAttachment = [
+  
+      // معالجة توقيع المرسل إذا وُجد
+      let senderSignatureAttachment = null;
+      if (sender_signature) {
+        if (!sender_signature.startsWith("data:image/")) {
+          return NextResponse.json(
+            { error: "توقيع المرسل يجب أن يكون بصيغة Base64 صالحة" },
+            { status: 400 }
+          );
+        }
+        const senderImageUrl = await uploadImageToSpaces(sender_signature);
+        senderSignatureAttachment = [{ url: senderImageUrl, filename: "sender-signature.png" }];
+      }
+  
+      // معالجة توقيع المستقبل إذا وُجد
+      let receiverSignatureAttachment = null;
+      if (receiver_signature) {
+        if (!receiver_signature.startsWith("data:image/")) {
+          return NextResponse.json(
+            { error: "توقيع المستقبل يجب أن يكون بصيغة Base64 صالحة" },
+            { status: 400 }
+          );
+        }
+        const receiverImageUrl = await uploadImageToSpaces(receiver_signature);
+        receiverSignatureAttachment = [{ url: receiverImageUrl, filename: "receiver-signature.png" }];
+      }
+  
+      // إنشاء السجل في جدول Transfer Requests
+      const createdRecord = await base("Transfer Requests").create([
         {
-          url: imageUrl,
-          filename: "signature.png",
+          fields: {
+            "sender_id": [sender_id], // ربط بجدول Users
+            "receiver_id": [receiver_id], // ربط بجدول Users
+            "assets": [assets], // ربط بجدول قائمة الاصول
+            "status": "pending", // حالة افتراضية
+            "transfer_date": new Date().toISOString(), // التاريخ الحالي تلقائيًا
+          },
         },
-      ];
+      ]);
+  
+      console.log("Transfer request created successfully:", createdRecord[0].getId());
+      return NextResponse.json(
+        { 
+          message: "تم إنشاء طلب النقل بنجاح",
+          record_id: createdRecord[0].getId() 
+        },
+        { status: 201 }
+      );
+  
+    } catch (error) {
+      console.error("Error in POST request:", error);
+      return NextResponse.json(
+        { error: "فشل في إنشاء طلب النقل: " + error.message },
+        { status: 500 }
+      );
     }
-
-    const createdRecords = await base("العهد المستلمة").create([
-      {
-        fields: {
-          "رقم الاصل": assets,
-          "اسم الموظف": receiverId,
-          "تاريخ الاستلام": transferDate,
-          "Notes": "sss",
-          "التوقيع": signatureAttachment,
-          "Email": "example@email.com", // يمكن استبداله بقيمة ديناميكية
-        },
-      },
-    ]);
-
-    console.log("Custody record created successfully");
-    return NextResponse.json(
-      { message: "تم تسجيل العهد المستلمة بنجاح", ids: createdRecords.map((r) => r.getId()) },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("Error in POST request:", error);
-    return NextResponse.json(
-      { error: "فشل في تسجيل العهد المستلمة: " + error.message },
-      { status: 500 }
-    );
   }
-}
 
 // دالة PUT لتحديث الحالة
 export async function PUT(req: NextRequest) {
