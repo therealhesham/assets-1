@@ -47,44 +47,26 @@ export async function GET(req: NextRequest) {
     try {
       console.log("GET request received at /api/transfer");
       const { searchParams } = new URL(req.url);
-      const userId = searchParams.get("userId");
-      const query = searchParams.get("search");
+      const query = searchParams.get("search"); // نستخدم `search` فقط
   
-      console.log("Query parameters:", { userId, query });
-  
-      if (!userId || isNaN(Number(userId))) {
+      if (!query || isNaN(Number(query))) {
         return NextResponse.json(
-          { error: "معرف المستخدم (empid) مطلوب ويجب أن يكون رقمًا" },
+          { error: "معرف الأصل (رقم الأصل) مطلوب ويجب أن يكون رقمًا" },
           { status: 400 }
         );
       }
   
-      let records;
-  
-      if (query && !isNaN(Number(query))) {
-        // البحث عن أصل برقم الأصل
-        console.log("Searching for asset with assetnum:", query);
-        records = await base("قائمة الاصول")
-          .select({
-            filterByFormula: `{assetnum} = ${Number(query)}`,
-            maxRecords: 10,
-          })
-          .all();
-      } else {
-        // جلب طلبات النقل الخاصة بالمستخدم (كمُرسل أو كمُستقبل)
-        console.log("Fetching transfer requests for userId (empid):", userId);
-  
-        records = await base("Transfer Requests")
-          .select({
-            filterByFormula: `OR({sender_id} = "${userId}", {receiver_id} = "${userId}")`,
-          })
-          .all();
-      }
+      console.log("Searching for asset with assetnum:", query);
+      const records = await base("قائمة الاصول")
+        .select({
+          filterByFormula: `{assetnum} = ${Number(query)}`,
+          maxRecords: 10,
+        })
+        .all();
   
       if (records.length === 0) {
-        console.log("No records found for userId or query:", { userId, query });
         return NextResponse.json(
-          { message: "لا توجد طلبات أو أصول متاحة" },
+          { message: "لا توجد أصول متطابقة مع رقم الأصل المطلوب" },
           { status: 404 }
         );
       }
@@ -94,12 +76,11 @@ export async function GET(req: NextRequest) {
         fields: record.fields,
       }));
   
-      console.log("Returning records:", results);
       return NextResponse.json(results, { status: 200 });
     } catch (error) {
       console.error("Error in GET request:", error);
       return NextResponse.json(
-        { error: "حدث خطأ أثناء البحث" },
+        { error: "حدث خطأ أثناء البحث عن الأصل" },
         { status: 500 }
       );
     }
